@@ -140,6 +140,14 @@
                 "ZIP_TO_DIST": "OFF",
                 "AIO_ZIP_TO_DIST": "OFF"
             }
+        },
+        {
+            "name": "LITE",
+            "description": "Lite distribution: inherits ALL and trims the AIO payload (no plugin PDB, no bundled renderdoc.dll). Pairs with the shipped SettingsDefault.json, which disables 23 of 39 features at boot.",
+            "inherits": "ALL",
+            "cacheVariables": {
+                "LITE_PACKAGE": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -197,6 +205,13 @@
             "configurePreset": "PR",
             "configuration": "Release",
             "targets": ["Package-AIO-Manual"]
+        },
+        {
+            "name": "LITE",
+            "description": "Build the lite AIO folder, ready to copy into a mod folder",
+            "configurePreset": "LITE",
+            "configuration": "Release",
+            "targets": ["AIO"]
         }
     ]
 }

@@ -51,12 +51,22 @@ option(
     "Zip the base mod and addons to a AIO zip file in dist."
     ON
 )
+option(
+    LITE_PACKAGE
+    "Trim the AIO to a lite payload: no plugin PDB, no bundled renderdoc.dll."
+    OFF
+)
 option(TRACY_SUPPORT "Enable support for tracy profiler" OFF)
 option(ENABLE_ENB_EXTENDER "Enable ENBExtender reimplementation (weather blending, time-of-day, technique bindings)" ON)
 message("\tAuto plugin deployment: ${AUTO_PLUGIN_DEPLOYMENT}")
 message("\tZip to dist: ${ZIP_TO_DIST}")
 message("\tAIO Zip to dist: ${AIO_ZIP_TO_DIST}")
+message("\tLite package: ${LITE_PACKAGE}")
 message("\tTracy profiler: ${TRACY_SUPPORT}")
+
+# Files dropped from the AIO when LITE_PACKAGE is ON. Keep this a single regex so
+# the same filter applies to the dependency list and to both copy passes.
+set(LITE_PACKAGE_EXCLUDE_REGEX "/Renderdoc/renderdoc\\.dll$")
 
 # #######################################################################################################################
 # # Build version info from git
@@ -515,6 +525,14 @@ if(AUTO_PLUGIN_DEPLOYMENT OR AIO_ZIP_TO_DIST)
         list(APPEND _AIO_PACKAGE_FILES ${_tmp})
     endforeach()
 
+    # LITE_PACKAGE drops payload that no enabled feature needs at runtime.
+    # renderdoc.dll is loaded lazily by RenderDoc::Load via LoadLibraryW from an
+    # explicit path (no PATH fallback) and only when capture is enabled, so its
+    # absence is a logged no-op rather than an error.
+    if(LITE_PACKAGE)
+        list(FILTER _AIO_PACKAGE_FILES EXCLUDE REGEX "${LITE_PACKAGE_EXCLUDE_REGEX}")
+    endif()
+
     # Prepare AIO by copying files only when different. This avoids updating
     # timestamps for unchanged files and prevents downstream incremental
     # deploys from copying everything every build.
@@ -574,6 +592,9 @@ if(AUTO_PLUGIN_DEPLOYMENT OR AIO_ZIP_TO_DIST)
                 "${_fpath}/*"
             )
             list(FILTER _feature_files EXCLUDE REGEX "/Shaders/")
+            if(LITE_PACKAGE)
+                list(FILTER _feature_files EXCLUDE REGEX "${LITE_PACKAGE_EXCLUDE_REGEX}")
+            endif()
             append_copy_if_different(_prepare_aio_cmds _feature_files "${_fpath}" "${AIO_DIR}")
         endif()
     endforeach()
@@ -587,6 +608,21 @@ if(AUTO_PLUGIN_DEPLOYMENT OR AIO_ZIP_TO_DIST)
         remove
         "${AIO_DIR}/CORE"
     )
+
+    # Excluding a file from the copy passes does not delete one a previous
+    # non-lite build already placed in the AIO, so drop them explicitly. This is
+    # what makes toggling LITE_PACKAGE on an existing build folder converge.
+    if(LITE_PACKAGE)
+        list(
+            APPEND _prepare_aio_cmds
+            COMMAND
+            ${CMAKE_COMMAND}
+            -E
+            remove
+            "${AIO_DIR}/Renderdoc/renderdoc.dll"
+            "${AIO_DIR}/SKSE/Plugins/$<TARGET_PDB_FILE_NAME:${PROJECT_NAME}>"
+        )
+    endif()
     list(
         APPEND _prepare_aio_cmds
         COMMAND
@@ -622,21 +658,36 @@ if(AUTO_PLUGIN_DEPLOYMENT OR AIO_ZIP_TO_DIST)
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/prepare_aio.stamp
     )
 
-    # Copy DLL and PDB using POST_BUILD to avoid race conditions with file locking
-    # This ensures the linker has fully released the files before we attempt to copy them
-    add_custom_command(
-        TARGET ${PROJECT_NAME}
-        POST_BUILD
+    # Copy DLL (and PDB, unless LITE_PACKAGE) using POST_BUILD to avoid race
+    # conditions with file locking. This ensures the linker has fully released
+    # the files before we attempt to copy them.
+    # The PDB is only needed to symbolicate crash logs; a lite package ships
+    # without it. It stays in build/<preset>/Release either way, so a crash
+    # report from a lite build can still be symbolicated locally.
+    set(_aio_dll_copy_cmds
         COMMAND ${CMAKE_COMMAND} -E make_directory "${AIO_DIR}/SKSE/Plugins"
         COMMAND
             ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:${PROJECT_NAME}>"
             "${AIO_DIR}/SKSE/Plugins/$<TARGET_FILE_NAME:${PROJECT_NAME}>"
-        COMMAND
+    )
+    if(LITE_PACKAGE)
+        set(_aio_dll_copy_comment "Copying built DLL to AIO package (lite: PDB omitted)")
+    else()
+        list(
+            APPEND _aio_dll_copy_cmds
+            COMMAND
             ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_PDB_FILE:${PROJECT_NAME}>"
             "${AIO_DIR}/SKSE/Plugins/$<TARGET_PDB_FILE_NAME:${PROJECT_NAME}>"
-        COMMENT "Copying built DLL and PDB to AIO package"
+        )
+        set(_aio_dll_copy_comment "Copying built DLL and PDB to AIO package")
+    endif()
+    add_custom_command(
+        TARGET ${PROJECT_NAME}
+        POST_BUILD
+        ${_aio_dll_copy_cmds}
+        COMMENT "${_aio_dll_copy_comment}"
         VERBATIM
     )
 
