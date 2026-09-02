@@ -1376,6 +1376,18 @@ if(LITE_PACKAGE AND IS_DIRECTORY "${LITE_SHADER_CACHE_DIR}")
         COMMENT "Staging precompiled shader cache into lite AIO package"
         VERBATIM
     )
+elseif(LITE_PACKAGE)
+    # No cache configured, but ShaderCache/ is exempt from the stale-entry
+    # cleanup, so one staged by an earlier build would otherwise linger in the
+    # AIO and ship unvalidated. Clear it so "no cache" really means none.
+    add_custom_command(
+        TARGET "AIO"
+        POST_BUILD
+        COMMAND
+            ${CMAKE_COMMAND} -E rm -rf ${AIO_DIR}/ShaderCache
+        COMMENT "Clearing stale precompiled shader cache from lite AIO package"
+        VERBATIM
+    )
 endif()
 
 # Regenerating the bundled cache needs a real game launch, so give that manual

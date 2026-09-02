@@ -165,6 +165,11 @@ if(DEFINED EXPECT_FILE AND EXISTS "${EXPECT_FILE}")
 endif()
 
 set(_dest "${AIO_DIR}/ShaderCache")
+# Replace rather than merge. ShaderCache/ is excluded from the stale-entry
+# cleanup (it has no counterpart in package/ or features/), so blobs from a
+# previously staged cache would otherwise survive here indefinitely and ship
+# alongside the new ones without ever having been validated.
+file(REMOVE_RECURSE "${_dest}")
 file(COPY "${CACHE_SRC}/" DESTINATION "${_dest}")
 
 file(GLOB_RECURSE _staged LIST_DIRECTORIES FALSE "${_dest}/*")
