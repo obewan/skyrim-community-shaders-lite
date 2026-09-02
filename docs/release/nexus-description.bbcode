@@ -1,0 +1,74 @@
+[size=4][b]Description[/b][/size]
+[size=3]An unofficial repack of [url=https://www.nexusmods.com/skyrimspecialedition/mods/86492]Community Shaders[/url] with a curated feature profile and a [b]precompiled shader cache[/b] bundled in.
+
+Community Shaders compiles several thousand shader permutations the first time you launch it. On a fast CPU that is a few minutes; on a slower one it can be closer to ten, and it happens again every time the plugin or a feature updates. This build ships those shaders already compiled, so the first launch goes straight into the game.
+
+[b]What this is not:[/b] this is not a performance mod. "Lite" refers to the download size and the removed first-launch wait, [i]not[/i] to framerate. In-game performance is the same as Community Shaders with the same features enabled. Running fewer features saves a little compile time, but the startup win here comes almost entirely from the bundled cache.[/size]
+
+[size=4][b]Installation instructions[/b][/size]
+[size=3][b]Install[/b]
+[list=1]
+[*]Install [url=https://skse.silverlock.org/]SKSE64[/url] and [url=https://www.nexusmods.com/skyrimspecialedition/mods/32444]Address Library for SKSE[/url].
+[*]If you already run Community Shaders, [b]disable or uninstall it first[/b]. Do not run both.
+[*]Install this archive with your mod manager and deploy.
+[*]Launch through SKSE. The first launch should reach the main menu without a "Compiling Shaders" overlay.
+[/list]
+
+[b]If it does compile on first launch[/b], the bundled cache was rejected. That is expected and harmless if you have changed the enabled features, or if another mod overwrites files in [font=Courier New]Data\Shaders[/font]. Let it finish once and it will be cached from then on.
+
+[b]Uninstall[/b]
+Remove the mod with your mod manager, then delete [font=Courier New]Data\ShaderCache[/font] if it remains. That folder is generated at runtime and mod managers do not always clean it up.[/size]
+
+[size=4][b]Main features[/b][/size]
+[size=3][b]28 features enabled out of the box[/b]
+Cloud Shadows, Dynamic Cubemaps, Effects 11, Exponential Height Fog, Extended Materials, Grass Collision, Grass Lighting, HDR Display, Image Based Lighting, Interior Sun, Inverse Square Lighting, LOD Blending, Light Limit Fix, Linear Lighting, Performance Overlay, Screen Space GI, Screen Space Shadows, Sky Sync, Skylighting, Terrain Blending, Terrain Shadows, Terrain Variation, True PBR, Upscaling, Volumetric Lighting, Volumetric Shadows, Water Effects, Wetness Effects.
+
+All of them can be toggled in the in-game menu ([b]END[/b] by default) like in stock Community Shaders.
+
+[b]3,455 precompiled shaders included[/b]
+Verified optimized — every shader in the bundle is compiled with full optimisation, none carry debug builds.
+
+[b]11 features are not included[/b]
+Four are developer and debug tools most players never use: CS Editor, RenderDoc, Remote Control, Screenshot.
+Seven are visual features left out to keep the package small: Extended Translucency, Hair Specular, Horizon Fix, Skin, Subsurface Scattering, Terrain Helper, Unified Water.
+
+These are [b]not shipped at all[/b], so they cannot simply be switched on in the menu. If you want any of them, use full Community Shaders or install that feature's standalone addon — the plugin still recognises them and will load them normally.
+
+[b]A note on Effects 11[/b]
+Effects 11 is included, but it is a runtime for ENB-format [font=Courier New].fx[/font] effect files, not an effect in itself. Without a preset it stays inert and costs nothing. To use it, place a preset's [font=Courier New]enbseries\[/font] folder and [font=Courier New]enbseries.ini[/font] in your game root — [b]without[/b] ENB's [font=Courier New]d3d11.dll[/font], which would conflict with Community Shaders. Not every preset behaves identically under this implementation.[/size]
+
+[size=4][b]If you want more than this[/b][/size]
+[size=3]This build deliberately trims. If it is not enough for you, go bigger — these are all better answers than asking for features to be added here:
+
+[list]
+[*][b][url=https://www.nexusmods.com/skyrimspecialedition/mods/86492]Community Shaders[/url][/b] — the full thing. Every feature, including the seven visual ones left out here, and the ones released after this build. The trade-off is the first-launch shader compile this package exists to avoid.
+[*][b][url=https://www.nexusmods.com/skyrimspecialedition/mods/180419]Open Shaders[/url][/b] — a fork of Community Shaders by alandtse, one of the Community Shaders founders. It carries features that are not in Community Shaders itself, such as Foliage Lighting, so it is the place to look if you want [i]more[/i] rather than less.
+[*][b][url=http://enbdev.com/]ENBSeries[/url][/b] — the long-established option, with a huge library of presets. A different renderer with different strengths, not a superset of this one.
+[/list]
+
+[b]Run only one of them at a time.[/b] They all hook the same rendering path:
+[list]
+[*]Community Shaders, Open Shaders and this build all descend from the [i]same plugin[/i] — installing more than one just fights over the same files.
+[*]ENBSeries installs its own [font=Courier New]d3d11.dll[/font] wrapper, which conflicts with Community Shaders outright.
+[/list]
+
+Uninstall one properly before installing another, and delete [font=Courier New]Data\ShaderCache[/font] when switching away from this build.[/size]
+
+[size=4][b]Requirements[/b][/size]
+[size=3][list]
+[*][url=https://skse.silverlock.org/]SKSE64[/url]
+[*][url=https://www.nexusmods.com/skyrimspecialedition/mods/32444]Address Library for SKSE[/url]
+[*]Skyrim Special Edition or Anniversary Edition (single build, detects the runtime). Not tested on VR.
+[*]A DirectX 11 capable GPU
+[/list]
+
+[b]Do not install alongside Community Shaders[/b] — this replaces it. Do not install alongside ENBSeries' [font=Courier New]d3d11.dll[/font].[/size]
+
+[size=4][b]Shout outs[/b][/size]
+[size=3]All credit for the actual work goes to the [url=https://github.com/community-shaders/skyrim-community-shaders]Community Shaders[/url] team and its contributors.
+
+Thanks also to [b]alandtse[/b], whose [url=https://github.com/alandtse/hlslkit]hlslkit[/url] is what validates the shaders in this build, and whose [url=https://www.nexusmods.com/skyrimspecialedition/mods/180419]Open Shaders[/url] is where to go if you want more features rather than fewer. This is their renderer; this page only repackages it with a different default profile and a prebuilt cache.
+
+Licensed under [b]GPL-3.0[/b], same as upstream. Source for this build: [url=https://github.com/obewan/skyrim-community-shaders-lite]github.com/obewan/skyrim-community-shaders-lite[/url]
+
+This is an [b]unofficial[/b] fork and is not endorsed by or affiliated with the Community Shaders team. Please report bugs here first rather than to upstream, unless you can reproduce them on stock Community Shaders.[/size]
