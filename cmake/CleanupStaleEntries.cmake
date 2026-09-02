@@ -57,7 +57,14 @@ if(MODE STREQUAL "AIO")
     set(_stale_aio_files)
     foreach(_existing IN LISTS _existing_aio_files)
         file(RELATIVE_PATH _rel "${AIO_DIR}" "${_existing}")
-        if(NOT _rel MATCHES "^SKSE/Plugins/" AND NOT _rel MATCHES "^Shaders/")
+        # ShaderCache/ is staged after this pass by StageShaderCache.cmake and has
+        # no counterpart in package/ or features/, so without this exclusion every
+        # bundled precompiled shader would be deleted as stale on the next build.
+        if(
+            NOT _rel MATCHES "^SKSE/Plugins/"
+            AND NOT _rel MATCHES "^Shaders/"
+            AND NOT _rel MATCHES "^ShaderCache/"
+        )
             list(FIND _current_aio_rels "${_rel}" _idx)
             if(_idx EQUAL -1)
                 list(APPEND _stale_aio_files "${_existing}")

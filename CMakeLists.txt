@@ -68,6 +68,17 @@ message("\tTracy profiler: ${TRACY_SUPPORT}")
 # the same filter applies to the dependency list and to both copy passes.
 set(LITE_PACKAGE_EXCLUDE_REGEX "/Renderdoc/renderdoc\\.dll$")
 
+# Optional precompiled shader cache bundled into the lite AIO, so first launch
+# loads shaders instead of compiling ~3.5k permutations. Generate it by running
+# the game once with the lite profile, then copy Data/ShaderCache here. It is
+# tied to the exact plugin version and feature versions recorded in its
+# Info.ini, so it must be regenerated whenever either changes.
+set(LITE_SHADER_CACHE_DIR
+    "${CMAKE_SOURCE_DIR}/precompiled-cache/ShaderCache"
+    CACHE PATH
+    "Precompiled Data/ShaderCache to bundle into the lite AIO (empty or missing to skip)."
+)
+
 # #######################################################################################################################
 # # Build version info from git
 # #######################################################################################################################
@@ -1279,10 +1290,27 @@ else()
     add_custom_target("AIO" DEPENDS ${AIO_DIR}/SKSE/Plugins/${PROJECT_NAME}.dll)
 endif()
 
-# Stripping features leaves their (now empty) folders in the AIO, which reads as
-# "installed but broken" to a user browsing the package. Prune them once both
-# copy passes are done -- the AIO target depends on prepare_aio.stamp and
-# copy_shaders.stamp, so this cannot race either of them.
+# Stage the precompiled shader cache, then prune empty folders left by stripped
+# features (which otherwise read as "installed but broken" to a user browsing the
+# package). Both run once the copy passes are done -- the AIO target depends on
+# prepare_aio.stamp and copy_shaders.stamp, so neither can race them. Staging
+# must precede the prune only in the sense that both are post-copy; they are
+# independent of each other.
+if(LITE_PACKAGE AND IS_DIRECTORY "${LITE_SHADER_CACHE_DIR}")
+    add_custom_command(
+        TARGET "AIO"
+        POST_BUILD
+        COMMAND
+            ${CMAKE_COMMAND}
+            -DCACHE_SRC=${LITE_SHADER_CACHE_DIR}
+            -DAIO_DIR=${AIO_DIR}
+            -P
+            "${CMAKE_SOURCE_DIR}/cmake/StageShaderCache.cmake"
+        COMMENT "Staging precompiled shader cache into lite AIO package"
+        VERBATIM
+    )
+endif()
+
 if(LITE_PACKAGE)
     add_custom_command(
         TARGET "AIO"
