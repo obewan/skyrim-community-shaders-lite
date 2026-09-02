@@ -68,6 +68,34 @@ else()
     )
 endif()
 
+# Capturing the shader-define log for shader-validation.yaml requires debug log
+# level, which also turns on developer mode and compiles every shader
+# unoptimized. That state is invisible in Info.ini -- it records only versions --
+# so a cache captured during such a run looks perfectly valid here. Check the
+# blobs instead: a debug compile leaves an SDBG/SPDB/ILDB chunk behind.
+include("${CMAKE_CURRENT_LIST_DIR}/ShaderBlobDebugScan.cmake")
+scan_shader_blobs_for_debug_info("${CACHE_SRC}" 64 _debug_blobs _blobs_scanned _debug_example)
+if(_debug_blobs GREATER 0 AND NOT LITE_CACHE_ALLOW_DEBUG_BLOBS)
+    message(
+        FATAL_ERROR
+        "${_debug_blobs} of ${_blobs_scanned} sampled shaders in ${CACHE_SRC} carry debug "
+        "info, so this cache was compiled with developer mode on (Community Shaders log "
+        "level at debug or trace) and is unoptimized. Shipping it would ship slow shaders "
+        "to every user.
+"
+        "Set the log level back to info, delete Data/ShaderCache, launch the game once and "
+        "let compilation finish, then re-run this target.
+"
+        "  example: ${_debug_example}
+"
+        "Set -DLITE_CACHE_ALLOW_DEBUG_BLOBS=ON only to snapshot a throwaway test cache."
+    )
+elseif(_blobs_scanned EQUAL 0)
+    message(WARNING "No readable shader blobs in ${CACHE_SRC}; cannot confirm they are optimized.")
+else()
+    message(STATUS "Verified ${_blobs_scanned} sampled shaders carry no debug info")
+endif()
+
 file(REMOVE_RECURSE "${CACHE_DEST}")
 file(COPY "${CACHE_SRC}/" DESTINATION "${CACHE_DEST}")
 file(WRITE "${CACHE_DEST}.digest" "${_digest}\n")
