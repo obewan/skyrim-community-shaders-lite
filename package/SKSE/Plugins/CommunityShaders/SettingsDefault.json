@@ -3,7 +3,7 @@
     "CSEditor": true,
     "CloudShadows": false,
     "DynamicCubemaps": false,
-    "Effects11": true,
+    "Effects11": false,
     "ExponentialHeightFog": false,
     "ExtendedMaterials": false,
     "ExtendedTranslucency": true,
