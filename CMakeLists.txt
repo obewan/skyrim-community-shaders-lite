@@ -431,6 +431,90 @@ endforeach()
 set(FEATURE_PATHS ${_valid_feature_paths})
 unset(_valid_feature_paths)
 unset(_feat_files)
+
+# LITE_PACKAGE: drop features the shipped profile disables at boot, so a lite
+# package does not carry payload it never loads. The profile is the single
+# source of truth -- edit SettingsDefault.json and both the runtime feature set
+# and the packaged payload follow.
+#
+# Everything downstream keys off FEATURE_PATHS (AIO copy, shader copy, both
+# CleanupStaleEntries passes, install() and the Package-* targets), so filtering
+# here is sufficient and previously-copied files are cleaned up automatically.
+#
+# Safe with respect to feature recognition: FeatureVersions.h is generated from
+# FEATURE_CONFIG_FILES, an independent glob evaluated earlier, so every feature
+# stays known to Feature::IsFeatureKnown. A user who installs a stripped feature
+# separately (full CS, or a standalone addon) still gets it loaded rather than
+# rejected as an unknown feature.
+if(LITE_PACKAGE)
+    set(_lite_profile
+        "${CMAKE_SOURCE_DIR}/package/SKSE/Plugins/CommunityShaders/SettingsDefault.json"
+    )
+    if(NOT EXISTS "${_lite_profile}")
+        message(
+            WARNING
+            "LITE_PACKAGE is ON but ${_lite_profile} is missing; shipping all features."
+        )
+    else()
+        file(READ "${_lite_profile}" _lite_json)
+        string(
+            JSON _lite_disabled_obj
+            ERROR_VARIABLE _lite_json_err
+            GET "${_lite_json}" "Disable at Boot"
+        )
+        if(_lite_json_err)
+            message(
+                WARNING
+                "LITE_PACKAGE: could not read 'Disable at Boot' from ${_lite_profile} (${_lite_json_err}); shipping all features."
+            )
+        else()
+            string(JSON _lite_count LENGTH "${_lite_disabled_obj}")
+            set(_lite_disabled_names "")
+            if(_lite_count GREATER 0)
+                math(EXPR _lite_last "${_lite_count} - 1")
+                foreach(_lite_i RANGE 0 ${_lite_last})
+                    string(JSON _lite_key MEMBER "${_lite_disabled_obj}" ${_lite_i})
+                    string(JSON _lite_val GET "${_lite_disabled_obj}" "${_lite_key}")
+                    if(_lite_val)
+                        list(APPEND _lite_disabled_names "${_lite_key}")
+                    endif()
+                endforeach()
+            endif()
+
+            # Map each feature folder to its short name via the .ini basename --
+            # folder names and short names differ (e.g. "Light Limit Fix" ->
+            # LightLimitFix, "IBL" -> ImageBasedLighting). Folders with no .ini
+            # are data companions to another feature (e.g. the Terrain Shadows
+            # heightmaps) and are kept; they carry no feature of their own.
+            set(_lite_kept "")
+            set(_lite_dropped "")
+            foreach(_fpath IN LISTS FEATURE_PATHS)
+                file(GLOB _lite_ini "${_fpath}/Shaders/Features/*.ini")
+                set(_lite_short "")
+                if(_lite_ini)
+                    list(GET _lite_ini 0 _lite_ini_first)
+                    get_filename_component(_lite_short "${_lite_ini_first}" NAME_WE)
+                endif()
+                if(_lite_short AND "${_lite_short}" IN_LIST _lite_disabled_names)
+                    get_filename_component(_lite_folder "${_fpath}" NAME)
+                    list(APPEND _lite_dropped "${_lite_folder}")
+                else()
+                    list(APPEND _lite_kept "${_fpath}")
+                endif()
+            endforeach()
+
+            set(FEATURE_PATHS ${_lite_kept})
+            list(LENGTH _lite_dropped _lite_dropped_count)
+            list(LENGTH _lite_kept _lite_kept_count)
+            message(
+                "\tLite package: shipping ${_lite_kept_count} feature folders, dropped ${_lite_dropped_count} disabled by the profile"
+            )
+            foreach(_lite_folder IN LISTS _lite_dropped)
+                message("\t\tdropped: ${_lite_folder}")
+            endforeach()
+        endif()
+    endif()
+endif()
 string(TIMESTAMP UTC_NOW "%Y-%m-%dT%H-%MZ" UTC)
 
 # Set AIO directory path used by multiple targets below
@@ -1193,6 +1277,29 @@ else()
         COMMENT "Installing to AIO folder"
     )
     add_custom_target("AIO" DEPENDS ${AIO_DIR}/SKSE/Plugins/${PROJECT_NAME}.dll)
+endif()
+
+# Stripping features leaves their (now empty) folders in the AIO, which reads as
+# "installed but broken" to a user browsing the package. Prune them once both
+# copy passes are done -- the AIO target depends on prepare_aio.stamp and
+# copy_shaders.stamp, so this cannot race either of them.
+if(LITE_PACKAGE)
+    add_custom_command(
+        TARGET "AIO"
+        POST_BUILD
+        COMMAND
+            ${CMAKE_COMMAND}
+            # No quotes around the values: VERBATIM already escapes each
+            # argument, so quoting here would make them part of the value and
+            # silently break the paths.
+            -DMODE=PRUNE
+            -DAIO_DIR=${AIO_DIR}
+            -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+            -P
+            "${CMAKE_SOURCE_DIR}/cmake/CleanupStaleEntries.cmake"
+        COMMENT "Pruning empty directories from lite AIO package"
+        VERBATIM
+    )
 endif()
 
 # Manual AIO package target

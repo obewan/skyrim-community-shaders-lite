@@ -106,6 +106,26 @@ elseif(MODE STREQUAL "SHADERS")
     foreach(_stale IN LISTS _stale_shader_files)
         file(REMOVE "${_stale}")
     endforeach()
+elseif(MODE STREQUAL "PRUNE")
+    # file(REMOVE) deletes files but leaves their directories behind, so a
+    # feature dropped from the package leaves an empty folder named after it --
+    # misleading in a shipped package, since it looks like the feature is
+    # installed. Loop because emptying a leaf can leave its parent empty.
+    set(_pruned_any TRUE)
+    while(_pruned_any)
+        set(_pruned_any FALSE)
+        file(GLOB_RECURSE _all_entries LIST_DIRECTORIES TRUE "${AIO_DIR}/*")
+        foreach(_entry IN LISTS _all_entries)
+            if(IS_DIRECTORY "${_entry}")
+                file(GLOB _children "${_entry}/*")
+                if(NOT _children)
+                    file(REMOVE_RECURSE "${_entry}")
+                    set(_pruned_any TRUE)
+                endif()
+            endif()
+        endforeach()
+    endwhile()
+
 else()
-    message(FATAL_ERROR "CleanupStaleEntries.cmake MODE must be AIO or SHADERS")
+    message(FATAL_ERROR "CleanupStaleEntries.cmake MODE must be AIO, SHADERS or PRUNE")
 endif()
