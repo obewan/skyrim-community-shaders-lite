@@ -56,6 +56,11 @@ option(
     "Trim the AIO to a lite payload: no plugin PDB, no bundled renderdoc.dll."
     OFF
 )
+option(
+    LITE_CACHE_REQUIRE_MATCH
+    "Fail the build when the bundled precompiled shader cache does not match this build's plugin and feature versions."
+    ON
+)
 option(TRACY_SUPPORT "Enable support for tracy profiler" OFF)
 option(ENABLE_ENB_EXTENDER "Enable ENBExtender reimplementation (weather blending, time-of-day, technique bindings)" ON)
 message("\tAuto plugin deployment: ${AUTO_PLUGIN_DEPLOYMENT}")
@@ -522,6 +527,44 @@ if(LITE_PACKAGE)
                 else()
                     list(APPEND _lite_kept "${_fpath}")
                 endif()
+            endforeach()
+
+            # Expectations for the bundled shader cache, mirroring
+            # Feature::ValidateCache: the runtime compares Info.ini's
+            # PluginVersion and each feature's Enabled/Version against the
+            # running build, and deletes the entire cache on any mismatch. Write
+            # what a matching Info.ini must contain so StageShaderCache.cmake can
+            # fail the build instead of shipping a cache that self-destructs on
+            # the user's first launch.
+            #
+            # Uses FEATURE_CONFIG_FILES (all features) rather than FEATURE_PATHS
+            # (already filtered above), because Info.ini carries an entry for
+            # every feature, including the stripped ones with Enabled = false.
+            set(_lite_expect_file "${CMAKE_CURRENT_BINARY_DIR}/lite_cache_expect.txt")
+            file(
+                WRITE "${_lite_expect_file}"
+                "PluginVersion|${PROJECT_VERSION_MAJOR}-${PROJECT_VERSION_MINOR}-${PROJECT_VERSION_PATCH}-0\n"
+            )
+            foreach(_cfg IN LISTS FEATURE_CONFIG_FILES)
+                get_filename_component(_cfg_short "${_cfg}" NAME_WE)
+                set(_cfg_enabled "true")
+                if("${_cfg_short}" IN_LIST _lite_disabled_names)
+                    set(_cfg_enabled "false")
+                endif()
+                # A disabled feature never reaches Feature::Load, so it has no
+                # version and Info.ini records an empty one.
+                set(_cfg_version "")
+                if(_cfg_enabled STREQUAL "true")
+                    file(READ "${_cfg}" _cfg_text)
+                    string(REGEX MATCH "[Vv]ersion[ \t]*=[ \t]*([0-9]+-[0-9]+-[0-9]+)" _ "${_cfg_text}")
+                    if(DEFINED CMAKE_MATCH_1)
+                        set(_cfg_version "${CMAKE_MATCH_1}")
+                    endif()
+                endif()
+                file(
+                    APPEND "${_lite_expect_file}"
+                    "${_cfg_short}|${_cfg_enabled}|${_cfg_version}\n"
+                )
             endforeach()
 
             set(FEATURE_PATHS ${_lite_kept})
@@ -1314,6 +1357,8 @@ if(LITE_PACKAGE AND IS_DIRECTORY "${LITE_SHADER_CACHE_DIR}")
             ${CMAKE_COMMAND}
             -DCACHE_SRC=${LITE_SHADER_CACHE_DIR}
             -DAIO_DIR=${AIO_DIR}
+            -DEXPECT_FILE=${CMAKE_CURRENT_BINARY_DIR}/lite_cache_expect.txt
+            -DREQUIRE_MATCH=${LITE_CACHE_REQUIRE_MATCH}
             -P
             "${CMAKE_SOURCE_DIR}/cmake/StageShaderCache.cmake"
         COMMENT "Staging precompiled shader cache into lite AIO package"
