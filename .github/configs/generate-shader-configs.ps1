@@ -123,17 +123,46 @@ function Test-LogFile {
         return $false
     }
 
-    # Check if log contains shader compilation activity
-    $content = Get-Content $LogPath -Tail 1000 | Out-String
-    if ($content -notmatch "shader|compilation|cache") {
-        Write-Warning "Log file for $GameName doesn't appear to contain shader compilation activity."
+    # Check the log holds the lines hlslkit-generate actually parses.
+    # These are logged at debug level. A log captured at the default info level still
+    # mentions "shader"/"cache" on hundreds of lines, so a loose keyword match passes
+    # while the generator happily emits an empty config.
+    $compileLines = @(Select-String -Path $LogPath -Pattern "[D] Compiling" -SimpleMatch -List).Count
+    if ($compileLines -eq 0) {
+        Write-Warning "Log file for $GameName contains no shader compilation lines."
+        Write-Host "hlslkit-generate reads the debug-level 'Compiling <shader>' lines, and this log has none." -ForegroundColor Yellow
+        Write-Host "In the Community Shaders menu set Log Level to Debug (or Trace), clear the shader disk" -ForegroundColor Yellow
+        Write-Host "cache, then relaunch and let compilation finish before regenerating." -ForegroundColor Yellow
         if (-not $Force) {
-            Write-Host "Make sure you've cleared the disk cache and run the game to trigger shader compilation." -ForegroundColor Yellow
             return $false
         }
     }
 
     Write-Host "Log file for $GameName is valid" -ForegroundColor Green
+    return $true
+}
+
+# Function to verify a generated config actually captured shader variants.
+# hlslkit-generate exits 0 and writes a well-formed but empty YAML when the source log
+# has no compilation lines, so the exit code alone is not enough to trust the result.
+function Test-GeneratedConfig {
+    param(
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        Write-Error "Generator reported success but produced no file: $Path"
+        return $false
+    }
+
+    $entries = @(Select-String -Path $Path -Pattern "^\s*- file:").Count
+    if ($entries -eq 0) {
+        Write-Error "Generated config lists no shaders - discarding it."
+        Write-Host "The source log had no debug-level compilation lines. See the log level note above." -ForegroundColor Yellow
+        return $false
+    }
+
+    Write-Host "Validated generated config: $entries shader file(s)" -ForegroundColor Green
     return $true
 }
 
@@ -168,13 +197,19 @@ if ($LogFile) {
         Write-Host "Generating $OutputName..." -ForegroundColor Blue
         Write-Host "Running: hlslkit-generate --log `"$LogFile`" --output `"$outputPath`"" -ForegroundColor Gray
 
-        & hlslkit-generate --log $LogFile --output $outputPath
+        # Generate to a temporary file and only move it into place once validated, so a
+        # bad run cannot overwrite the checked-in config with an empty one.
+        $tempPath = "$outputPath.tmp"
+        & hlslkit-generate --log $LogFile --output $tempPath
 
-        if ($LASTEXITCODE -eq 0) {
+        if ($LASTEXITCODE -eq 0 -and (Test-GeneratedConfig -Path $tempPath)) {
+            Move-Item -Path $tempPath -Destination $outputPath -Force
             Write-Host "Successfully generated $OutputName" -ForegroundColor Green
             Write-Host "File saved to: $outputPath" -ForegroundColor Gray
         } else {
+            if (Test-Path $tempPath) { Remove-Item $tempPath -Force }
             Write-Error "Failed to generate $OutputName (exit code: $LASTEXITCODE)"
+            Write-Host "Existing $OutputName left untouched." -ForegroundColor Yellow
             exit 1
         }
     } catch {
@@ -213,13 +248,18 @@ foreach ($skyrim in $skyrimPaths) {
         Write-Host "Generating $($skyrim.ConfigName)..." -ForegroundColor Blue
         Write-Host "Running: hlslkit-generate --log `"$($skyrim.LogPath)`" --output `"$outputPath`"" -ForegroundColor Gray
 
-        & hlslkit-generate --log $skyrim.LogPath --output $outputPath
+        # Same temp-then-validate dance as the direct path above.
+        $tempPath = "$outputPath.tmp"
+        & hlslkit-generate --log $skyrim.LogPath --output $tempPath
 
-        if ($LASTEXITCODE -eq 0) {
+        if ($LASTEXITCODE -eq 0 -and (Test-GeneratedConfig -Path $tempPath)) {
+            Move-Item -Path $tempPath -Destination $outputPath -Force
             Write-Host "Successfully generated $($skyrim.ConfigName)" -ForegroundColor Green
             $generated++
         } else {
+            if (Test-Path $tempPath) { Remove-Item $tempPath -Force }
             Write-Error "Failed to generate $($skyrim.ConfigName) (exit code: $LASTEXITCODE)"
+            Write-Host "Existing $($skyrim.ConfigName) left untouched." -ForegroundColor Yellow
         }
     } catch {
         Write-Error "Error generating $($skyrim.ConfigName): $($_.Exception.Message)"

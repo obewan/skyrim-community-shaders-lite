@@ -23,6 +23,14 @@ Before running the generation script, you must run Skyrim SE **once** with the f
 3. **Enable Disk Cache**: Ensure disk cache is enabled and will be saved
 4. **Run the Game**: Launch and wait for compilation to complete to generate shader compilation logs
 
+> **Debug log level deoptimizes shaders.** `State::IsDeveloperMode()` is true whenever the log
+> level is debug or lower, which swaps `D3DCOMPILE_OPTIMIZATION_LEVEL3` for `D3DCOMPILE_DEBUG` and
+> `D3DCOMPILE_SKIP_OPTIMIZATION`. The capture run is therefore slow, plays badly, and leaves an
+> unoptimized shader cache on disk. **Delete `Data/ShaderCache` once you have the log**, before
+> doing anything that snapshots or ships that cache (on the lite branch, before
+> `SNAPSHOT_LITE_CACHE`). This is unavoidable: the `Compiling ...` lines the generator parses are
+> themselves logged at debug level.
+
 The required log file will be created at:
 
 -   **Skyrim SE**: `%USERPROFILE%\Documents\My Games\Skyrim Special Edition\SKSE\CommunityShaders.log`
@@ -41,9 +49,15 @@ cd .github\configs
 The script will:
 
 1. Detect available Skyrim installations
-2. Check for required log files
-3. Generate configuration files using hlslkit
-4. Update the files in `.github\configs\`
+2. Check for required log files, rejecting any log with no `[D] Compiling` lines
+3. Generate configuration files using hlslkit into a temporary file
+4. Validate that the result actually lists shaders, then move it into `.github\configs\`
+
+Steps 2 and 4 exist because `hlslkit-generate` exits `0` and writes a well-formed but **empty**
+YAML when the log has no compilation lines. An info-level log still mentions "shader" and "cache"
+on hundreds of lines, so it looks valid on a loose keyword check. Without these guards, running
+the script after an ordinary play session silently replaces the checked-in config with one that
+validates nothing, and CI keeps passing. A rejected run leaves the existing config untouched.
 
 ### Manual Generation
 
