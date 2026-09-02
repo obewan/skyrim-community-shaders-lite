@@ -104,6 +104,45 @@ if(DEFINED EXPECT_FILE AND EXISTS "${EXPECT_FILE}")
         endif()
     endforeach()
 
+    # Content check. The version comparison above cannot see a shader-only
+    # change: an upstream .hlsl fix with no version bump leaves every version
+    # matching while the cached blobs are stale, and the runtime's own mtime
+    # check cannot catch it either because staging touches the cache newer than
+    # the sources. Without this the fix ships in source and the game renders
+    # from the old blobs.
+    if(DEFINED SHADER_DIR AND EXISTS "${CACHE_SRC}.digest")
+        include("${CMAKE_CURRENT_LIST_DIR}/ShaderTreeDigest.cmake")
+        shader_tree_digest("${SHADER_DIR}" _current_digest)
+        file(READ "${CACHE_SRC}.digest" _recorded_digest)
+        string(STRIP "${_recorded_digest}" _recorded_digest)
+        if(_current_digest AND NOT "${_current_digest}" STREQUAL "${_recorded_digest}")
+            string(REPLACE ":" ";" _cur_parts "${_current_digest}")
+            string(REPLACE ":" ";" _rec_parts "${_recorded_digest}")
+            list(GET _cur_parts 1 _cur_count)
+            list(GET _rec_parts 1 _rec_count)
+            if(NOT _cur_count EQUAL _rec_count)
+                list(
+                    APPEND _cache_problems
+                    "shader tree: ${_rec_count} shaders when the cache was built, ${_cur_count} now"
+                )
+            else()
+                list(
+                    APPEND _cache_problems
+                    "shader tree: ${_cur_count} shaders, but their contents changed since the cache was built"
+                )
+            endif()
+        endif()
+    elseif(DEFINED SHADER_DIR)
+        # No digest means the cache was copied in by hand, so nothing can prove
+        # which shaders produced it. Treat that as a mismatch rather than a
+        # warning: shipping an unverifiable cache is the failure this guard
+        # exists to prevent, and a warning would just scroll past.
+        list(
+            APPEND _cache_problems
+            "no .digest file, so the shaders that produced this cache cannot be verified"
+        )
+    endif()
+
     list(LENGTH _cache_problems _cache_problem_count)
     if(_cache_problem_count GREATER 0)
         string(REPLACE ";" "\n    " _cache_problem_text "${_cache_problems}")

@@ -1370,9 +1370,34 @@ if(LITE_PACKAGE AND IS_DIRECTORY "${LITE_SHADER_CACHE_DIR}")
             -DAIO_DIR=${AIO_DIR}
             -DEXPECT_FILE=${CMAKE_CURRENT_BINARY_DIR}/lite_cache_expect.txt
             -DREQUIRE_MATCH=${LITE_CACHE_REQUIRE_MATCH}
+            -DSHADER_DIR=${AIO_DIR}/Shaders
             -P
             "${CMAKE_SOURCE_DIR}/cmake/StageShaderCache.cmake"
         COMMENT "Staging precompiled shader cache into lite AIO package"
+        VERBATIM
+    )
+endif()
+
+# Regenerating the bundled cache needs a real game launch, so give that manual
+# step a target rather than leaving it as tribal knowledge. Point
+# LITE_GAME_SHADERCACHE at the game's Data/ShaderCache, then:
+#   cmake --build build/LITE --target SNAPSHOT_LITE_CACHE
+if(LITE_PACKAGE)
+    set(LITE_GAME_SHADERCACHE
+        ""
+        CACHE PATH
+        "Game Data/ShaderCache to snapshot with the SNAPSHOT_LITE_CACHE target."
+    )
+    add_custom_target(
+        SNAPSHOT_LITE_CACHE
+        COMMAND
+            ${CMAKE_COMMAND}
+            -DCACHE_SRC=${LITE_GAME_SHADERCACHE}
+            -DCACHE_DEST=${LITE_SHADER_CACHE_DIR}
+            -DSHADER_DIR=${AIO_DIR}/Shaders
+            -P
+            "${CMAKE_SOURCE_DIR}/cmake/SnapshotShaderCache.cmake"
+        COMMENT "Snapshotting game shader cache into ${LITE_SHADER_CACHE_DIR}"
         VERBATIM
     )
 endif()
