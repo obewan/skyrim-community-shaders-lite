@@ -143,10 +143,11 @@
         },
         {
             "name": "LITE",
-            "description": "Lite distribution: inherits ALL and trims the AIO payload (no plugin PDB, no bundled renderdoc.dll). Pairs with the shipped SettingsDefault.json, which disables 23 of 39 features at boot.",
+            "description": "Lite distribution: inherits ALL, trims the AIO payload (no plugin PDB, no bundled renderdoc.dll) and bundles a precompiled shader cache. Pairs with the shipped SettingsDefault.json. ZIP_TO_DIST is off so dist/ holds exactly one artifact, CommunityShaders-Lite_AIO-<utc>.zip.",
             "inherits": "ALL",
             "cacheVariables": {
-                "LITE_PACKAGE": "ON"
+                "LITE_PACKAGE": "ON",
+                "ZIP_TO_DIST": "OFF"
             }
         }
     ],

@@ -79,6 +79,17 @@ else()
     set(PLUGIN_EDITION "")
 endif()
 
+# Basename for everything written to dist/. A lite build must not produce
+# archives named like the full one -- they differ in feature set and in whether
+# they carry a precompiled shader cache, and the timestamped names are otherwise
+# indistinguishable at a glance. PROJECT_NAME itself is deliberately untouched:
+# it feeds the DLL and log filenames and the SKSE plugin identity.
+if(LITE_PACKAGE)
+    set(PACKAGE_BASENAME "${PROJECT_NAME}-Lite")
+else()
+    set(PACKAGE_BASENAME "${PROJECT_NAME}")
+endif()
+
 # Files dropped from the AIO when LITE_PACKAGE is ON. Keep this a single regex so
 # the same filter applies to the dependency list and to both copy passes.
 set(LITE_PACKAGE_EXCLUDE_REGEX "/Renderdoc/renderdoc\\.dll$")
@@ -1157,7 +1168,7 @@ if(ZIP_TO_DIST)
         COMMAND ${CMAKE_COMMAND} -E remove_directory "${ZIP_DIR}/Shaders/Tests"
     )
 
-    set(TARGET_ZIP "${PROJECT_NAME}-${UTC_NOW}.zip")
+    set(TARGET_ZIP "${PACKAGE_BASENAME}-${UTC_NOW}.zip")
     message("Zipping ${ZIP_DIR} to ${CMAKE_SOURCE_DIR}/dist/${TARGET_ZIP}")
     add_custom_command(
         TARGET ${PROJECT_NAME}
@@ -1205,9 +1216,9 @@ if(AIO_ZIP_TO_DIST)
     # keeps the UTC timestamp as before, but the command writes a stable
     # stamp file that CMake can track as OUTPUT.
     if(SEVENZ_EXECUTABLE)
-        set(TARGET_AIO_ZIP "${PROJECT_NAME}_AIO-${UTC_NOW}.7z")
+        set(TARGET_AIO_ZIP "${PACKAGE_BASENAME}_AIO-${UTC_NOW}.7z")
     else()
-        set(TARGET_AIO_ZIP "${PROJECT_NAME}_AIO-${UTC_NOW}.zip")
+        set(TARGET_AIO_ZIP "${PACKAGE_BASENAME}_AIO-${UTC_NOW}.zip")
     endif()
     set(AIO_ARCHIVE "${CMAKE_SOURCE_DIR}/dist/${TARGET_AIO_ZIP}")
     set(AIO_ZIP_STAMP "${CMAKE_CURRENT_BINARY_DIR}/aio_package.stamp")
@@ -1254,7 +1265,7 @@ endif()
 set(DIST_PATH "${CMAKE_SOURCE_DIR}/dist")
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/dist")
 
-set(CORE_PACKAGE "${DIST_PATH}/${PROJECT_NAME}-${UTC_NOW}.zip")
+set(CORE_PACKAGE "${DIST_PATH}/${PACKAGE_BASENAME}-${UTC_NOW}.zip")
 
 # CORE_SOURCES = all content copied to the AIO directory + the SKSE plugin dll.
 # No CONFIGURE_DEPENDS: packaging runs from a fresh CI configure, and omitting
