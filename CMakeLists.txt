@@ -64,6 +64,16 @@ message("\tAIO Zip to dist: ${AIO_ZIP_TO_DIST}")
 message("\tLite package: ${LITE_PACKAGE}")
 message("\tTracy profiler: ${TRACY_SUPPORT}")
 
+# Baked into Plugin::EDITION and shown in the UI in place of the git describe
+# string, so a lite build is identifiable at a glance. Does not affect
+# PROJECT_NAME, the DLL name, the log filename or Plugin::VERSION -- changing
+# those would rename shipped files and invalidate any precompiled shader cache.
+if(LITE_PACKAGE)
+    set(PLUGIN_EDITION "Lite")
+else()
+    set(PLUGIN_EDITION "")
+endif()
+
 # Files dropped from the AIO when LITE_PACKAGE is ON. Keep this a single regex so
 # the same filter applies to the dependency list and to both copy passes.
 set(LITE_PACKAGE_EXCLUDE_REGEX "/Renderdoc/renderdoc\\.dll$")

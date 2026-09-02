@@ -7,6 +7,19 @@ namespace Util
 {
 	std::string GetFormattedVersion(const REL::Version& version);
 
+	/**
+	 * @brief Returns the build qualifier to show beside the version in the UI.
+	 *
+	 * Precedence: a build flavour (Plugin::EDITION, e.g. "Lite") wins, so a lite
+	 * package is identifiable at a glance rather than showing a git describe
+	 * string. Otherwise a non-release build returns its describe string
+	 * (e.g. "v1.9.0-3-gabcdef1-dirty"), and a clean tagged release returns empty
+	 * so callers render the version on its own.
+	 *
+	 * @return Text for the "[...]" suffix, or an empty string for a plain release.
+	 */
+	std::string GetBuildTag();
+
 	std::string DefinesToString(const std::vector<std::pair<const char*, const char*>>& defines);
 	std::string DefinesToString(const std::vector<D3D_SHADER_MACRO>& defines);
 

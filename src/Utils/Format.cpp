@@ -15,6 +15,20 @@ namespace Util
 		return v.substr(0, v.find_last_of("."));
 	}
 
+	std::string GetBuildTag()
+	{
+		if (!Plugin::EDITION.empty())
+			return std::string(Plugin::EDITION);
+
+		// A clean tagged release describes exactly as "v{version}"; anything else
+		// is a dev build and worth surfacing.
+		const auto expectedTag = std::format("v{}", GetFormattedVersion(Plugin::VERSION));
+		if (Plugin::BUILD_DESCRIBE == expectedTag)
+			return {};
+
+		return std::string(Plugin::BUILD_DESCRIBE);
+	}
+
 	std::string DefinesToString(const std::vector<std::pair<const char*, const char*>>& defines)
 	{
 		std::string result;

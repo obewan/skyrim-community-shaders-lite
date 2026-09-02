@@ -773,8 +773,8 @@ void Menu::DrawSettings()
 	ImGui::SetNextWindowSize(Util::GetNativeViewportSizeScaled(0.8f), layoutCond);
 	resetLayout = false;
 	auto versionStr = Util::GetFormattedVersion(Plugin::VERSION);
-	auto expectedTag = std::format("v{}", versionStr);
-	auto displayTitle = Plugin::BUILD_DESCRIBE == expectedTag ? I18n::GetSingleton()->Format("menu.window_title", { { "version", versionStr } }, "Community Shaders {version}") : I18n::GetSingleton()->Format("menu.window_title_dev", { { "version", versionStr }, { "build", std::string(Plugin::BUILD_DESCRIBE) } }, "Community Shaders {version} [{build}]");
+	auto buildTag = Util::GetBuildTag();
+	auto displayTitle = buildTag.empty() ? I18n::GetSingleton()->Format("menu.window_title", { { "version", versionStr } }, "Community Shaders {version}") : I18n::GetSingleton()->Format("menu.window_title_dev", { { "version", versionStr }, { "build", buildTag } }, "Community Shaders {version} [{build}]");
 	// Use ### to keep a stable window ID regardless of build suffix, preserving docking state
 	auto title = std::format("{}###CommunityShaders", displayTitle);
 

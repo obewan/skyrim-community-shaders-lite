@@ -51,7 +51,12 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	while (!REX::W32::IsDebuggerPresent()) {};
 #endif
 	InitializeLog();
-	logger::info("Loaded {} {}", Plugin::NAME, Plugin::VERSION.string());
+	// Include the build flavour so a support log identifies the package, not just
+	// the version -- a lite build shares its version with the full one.
+	if (Plugin::EDITION.empty())
+		logger::info("Loaded {} {}", Plugin::NAME, Plugin::VERSION.string());
+	else
+		logger::info("Loaded {} {} [{}]", Plugin::NAME, Plugin::VERSION.string(), Plugin::EDITION);
 	SKSE::Init(a_skse);
 	SKSE::AllocTrampoline(1 << 10);
 	return Load();
