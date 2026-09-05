@@ -144,6 +144,17 @@ set(LITE_RUNTIME_GATED_FEATURES
     "Feature short names whose Enabled state depends on the user's environment, so the cache guard cannot assert it."
 )
 
+# Shader cache subdirectories left out of the bundle. These are shaders the
+# runtime compiles on first use rather than during the startup batch, so it
+# rewrites their blobs every session with identical content and a new timestamp.
+# A mod manager then reports changed files after every play session. Excluding
+# them costs one on-demand recompile and removes that prompt.
+set(LITE_CACHE_EXCLUDE_SHADERS
+    "ReflectionsRayTracing"
+    CACHE STRING
+    "Comma-separated shader cache subdirectories to leave out of the bundled cache."
+)
+
 # Optional precompiled shader cache bundled into the lite AIO, so first launch
 # loads shaders instead of compiling ~3.5k permutations. Generate it by running
 # the game once with the lite profile, then copy Data/ShaderCache here. It is
@@ -1516,6 +1527,7 @@ if(LITE_PACKAGE)
             -DCACHE_DEST=${LITE_SHADER_CACHE_DIR}
             -DSHADER_DIR=${AIO_DIR}/Shaders
             -DEXPECT_FILE=${CMAKE_CURRENT_BINARY_DIR}/lite_cache_expect.txt
+            -DEXCLUDE_SHADERS=${LITE_CACHE_EXCLUDE_SHADERS}
             -P
             "${CMAKE_SOURCE_DIR}/cmake/SnapshotShaderCache.cmake"
         COMMENT "Snapshotting game shader cache into ${LITE_SHADER_CACHE_DIR}"

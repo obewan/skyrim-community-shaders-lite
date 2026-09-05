@@ -130,6 +130,27 @@ endif()
 
 file(REMOVE_RECURSE "${CACHE_DEST}")
 file(COPY "${CACHE_SRC}/" DESTINATION "${CACHE_DEST}")
+
+# EXCLUDE_SHADERS names cache subdirectories to leave out of the bundle. Some
+# shaders are compiled on first use rather than in the startup batch, and the
+# runtime rewrites their blobs every session -- byte-identical content, fresh
+# mtime. Bundling those makes a mod manager report changed files after every
+# play session and ask whether to keep the newer ones, which is a poor trade for
+# a few KB. The game recompiles them on demand anyway.
+#
+# Removed after the copy rather than filtered during it: CMake's file(COPY)
+# has no "everything except these directories" form that composes cleanly.
+if(DEFINED EXCLUDE_SHADERS AND NOT "${EXCLUDE_SHADERS}" STREQUAL "")
+    string(REPLACE "," ";" _excl_list "${EXCLUDE_SHADERS}")
+    foreach(_excl IN LISTS _excl_list)
+        string(STRIP "${_excl}" _excl)
+        if(_excl AND IS_DIRECTORY "${CACHE_DEST}/${_excl}")
+            file(REMOVE_RECURSE "${CACHE_DEST}/${_excl}")
+            message(STATUS "Excluded runtime-rewritten shader dir from bundle: ${_excl}")
+        endif()
+    endforeach()
+endif()
+
 file(WRITE "${CACHE_DEST}.digest" "${_digest}\n")
 
 file(GLOB_RECURSE _copied LIST_DIRECTORIES FALSE "${CACHE_DEST}/*")
