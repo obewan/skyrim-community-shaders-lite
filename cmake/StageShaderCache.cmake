@@ -46,63 +46,8 @@ endif()
 # none: users download it, it is deleted on first launch, and they compile
 # anyway. Fail the build instead, because that failure is otherwise silent.
 if(DEFINED EXPECT_FILE AND EXISTS "${EXPECT_FILE}")
-    # Parse Info.ini into _ini_<Section>_<Key> variables. Done line-wise rather
-    # than by regex over the whole file because the file starts with a BOM and
-    # CMake regexes have no multiline mode.
-    file(STRINGS "${CACHE_SRC}/Info.ini" _ini_lines)
-    set(_section "")
-    foreach(_line IN LISTS _ini_lines)
-        if(_line MATCHES "^[^[]*\\[([^]]+)\\]")
-            set(_section "${CMAKE_MATCH_1}")
-        elseif(_section AND _line MATCHES "^[ \t]*([A-Za-z]+)[ \t]*=[ \t]*(.*)$")
-            set(_key "${CMAKE_MATCH_1}")
-            string(STRIP "${CMAKE_MATCH_2}" _value)
-            set("_ini_${_section}_${_key}" "${_value}")
-        endif()
-    endforeach()
-
-    set(_cache_problems "")
-    file(STRINGS "${EXPECT_FILE}" _expect_lines)
-    foreach(_line IN LISTS _expect_lines)
-        string(REPLACE "|" ";" _parts "${_line}")
-        list(GET _parts 0 _name)
-        if(_name STREQUAL "PluginVersion")
-            list(GET _parts 1 _want_version)
-            if(NOT "${_ini_Cache_PluginVersion}" STREQUAL "${_want_version}")
-                list(
-                    APPEND _cache_problems
-                    "plugin version: cache has '${_ini_Cache_PluginVersion}', build is '${_want_version}'"
-                )
-            endif()
-        else()
-            list(GET _parts 1 _want_enabled)
-            set(_want_version "")
-            list(LENGTH _parts _part_count)
-            if(_part_count GREATER 2)
-                list(GET _parts 2 _want_version)
-            endif()
-            # Test definedness, not truthiness: a disabled feature's value is the
-            # string "false", which CMake's if() treats as boolean false and would
-            # misreport as a missing entry.
-            set(_enabled_var "_ini_${_name}_Enabled")
-            set(_version_var "_ini_${_name}_Version")
-            set(_have_enabled "${${_enabled_var}}")
-            set(_have_version "${${_version_var}}")
-            if(NOT DEFINED ${_enabled_var})
-                list(APPEND _cache_problems "${_name}: missing from cache Info.ini")
-            elseif(NOT "${_have_enabled}" STREQUAL "${_want_enabled}")
-                list(
-                    APPEND _cache_problems
-                    "${_name}: cache says Enabled=${_have_enabled}, profile says ${_want_enabled}"
-                )
-            elseif(_want_enabled STREQUAL "true" AND NOT "${_have_version}" STREQUAL "${_want_version}")
-                list(
-                    APPEND _cache_problems
-                    "${_name}: cache built against ${_have_version}, shipping ${_want_version}"
-                )
-            endif()
-        endif()
-    endforeach()
+    include("${CMAKE_CURRENT_LIST_DIR}/CacheInfoProblems.cmake")
+    cache_info_problems("${CACHE_SRC}" "${EXPECT_FILE}" _cache_problems)
 
     # Content check. The version comparison above cannot see a shader-only
     # change: an upstream .hlsl fix with no version bump leaves every version

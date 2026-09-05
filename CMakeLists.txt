@@ -94,6 +94,56 @@ endif()
 # the same filter applies to the dependency list and to both copy passes.
 set(LITE_PACKAGE_EXCLUDE_REGEX "/Renderdoc/renderdoc\\.dll$")
 
+# Features whose payload this repack has no right to redistribute. They are
+# stripped from the AIO like a disabled feature, but -- unlike a disabled one --
+# they stay ENABLED in the shipped SettingsDefault.json, so a user who installs
+# the feature from its own author's release gets it loaded on the next launch
+# with no menu step. Not redistributing is not the same as blocking.
+#
+# Deliberately a separate list from the boot profile: "we do not ship this" and
+# "the user does not want this on" are different statements, and conflating them
+# is what leaves a separately-installed addon silently inert.
+#
+# Short names, matching the .ini basename rather than the folder name.
+set(LITE_UNSHIPPED_FEATURES
+    "Effects11"
+    CACHE STRING
+    "Feature short names stripped from the lite AIO for redistribution reasons, but left enabled at boot."
+)
+
+# The mirror image: features whose payload IS shipped even though the profile
+# turns them off at boot, so the user can enable them from the menu without
+# hunting down a separate download. Meant for CORE pre-release features --
+# upstream deliberately ships those off by default (Feature::IsDisabledByDefault),
+# and a repack should not quietly promote a beta to on-by-default. Excluding them
+# outright is worse still: a CORE feature cannot be restored from a standalone
+# addon, so the user would have no way back.
+#
+# Short names, matching the .ini basename rather than the folder name.
+set(LITE_SHIPPED_DISABLED_FEATURES
+    "UnifiedWater"
+    CACHE STRING
+    "Feature short names whose payload ships in the lite AIO even though the profile disables them at boot."
+)
+
+# Features whose loaded state depends on the player's setup rather than on our
+# profile, so the shader-cache expectation cannot assert it. HorizonFix clears
+# `loaded` in PostPostLoad unless HorizonFix.dll is present (see
+# src/Features/HorizonFix.cpp) -- its own comment notes that installing or
+# removing that plugin is *meant* to invalidate the cache. Predicting "enabled"
+# for it would fail every build on a machine without the plugin, which is every
+# build machine.
+#
+# Only the Enabled flag is skipped for these; the version is still compared,
+# because the runtime records it either way.
+#
+# Short names, matching the .ini basename rather than the folder name.
+set(LITE_RUNTIME_GATED_FEATURES
+    "HorizonFix"
+    CACHE STRING
+    "Feature short names whose Enabled state depends on the user's environment, so the cache guard cannot assert it."
+)
+
 # Optional precompiled shader cache bundled into the lite AIO, so first launch
 # loads shaders instead of compiling ~3.5k permutations. Generate it by running
 # the game once with the lite profile, then copy Data/ShaderCache here. It is
@@ -523,8 +573,35 @@ if(LITE_PACKAGE)
             # LightLimitFix, "IBL" -> ImageBasedLighting). Folders with no .ini
             # are data companions to another feature (e.g. the Terrain Shadows
             # heightmaps) and are kept; they carry no feature of their own.
+            # Two independent questions, deliberately not conflated:
+            #
+            #   does it LOAD?  no, if the profile disables it at boot, and no if
+            #                  its payload is absent (Feature::Load returns early
+            #                  when the .ini is missing)
+            #   do we SHIP it? no, if it is disabled at boot -- unless it is in
+            #                  LITE_SHIPPED_DISABLED_FEATURES -- and no if we may
+            #                  not redistribute it
+            #
+            # _lite_unloaded_names answers the first and drives the shader-cache
+            # expectation, because Info.ini's Enabled mirrors Feature::loaded.
+            # _lite_strip_names answers the second and drives the payload filter.
+            set(_lite_unloaded_names ${_lite_disabled_names})
+            foreach(_lite_unshipped IN LISTS LITE_UNSHIPPED_FEATURES)
+                if(NOT "${_lite_unshipped}" IN_LIST _lite_unloaded_names)
+                    list(APPEND _lite_unloaded_names "${_lite_unshipped}")
+                endif()
+            endforeach()
+
+            set(_lite_strip_names "")
+            foreach(_lite_name IN LISTS _lite_unloaded_names)
+                if(NOT "${_lite_name}" IN_LIST LITE_SHIPPED_DISABLED_FEATURES)
+                    list(APPEND _lite_strip_names "${_lite_name}")
+                endif()
+            endforeach()
+
             set(_lite_kept "")
             set(_lite_dropped "")
+            set(_lite_dropped_unshipped "")
             foreach(_fpath IN LISTS FEATURE_PATHS)
                 file(GLOB _lite_ini "${_fpath}/Shaders/Features/*.ini")
                 set(_lite_short "")
@@ -532,9 +609,13 @@ if(LITE_PACKAGE)
                     list(GET _lite_ini 0 _lite_ini_first)
                     get_filename_component(_lite_short "${_lite_ini_first}" NAME_WE)
                 endif()
-                if(_lite_short AND "${_lite_short}" IN_LIST _lite_disabled_names)
+                if(_lite_short AND "${_lite_short}" IN_LIST _lite_strip_names)
                     get_filename_component(_lite_folder "${_fpath}" NAME)
-                    list(APPEND _lite_dropped "${_lite_folder}")
+                    if("${_lite_short}" IN_LIST _lite_disabled_names)
+                        list(APPEND _lite_dropped "${_lite_folder}")
+                    else()
+                        list(APPEND _lite_dropped_unshipped "${_lite_folder}")
+                    endif()
                 else()
                     list(APPEND _lite_kept "${_fpath}")
                 endif()
@@ -559,13 +640,22 @@ if(LITE_PACKAGE)
             foreach(_cfg IN LISTS FEATURE_CONFIG_FILES)
                 get_filename_component(_cfg_short "${_cfg}" NAME_WE)
                 set(_cfg_enabled "true")
-                if("${_cfg_short}" IN_LIST _lite_disabled_names)
+                if("${_cfg_short}" IN_LIST _lite_unloaded_names)
                     set(_cfg_enabled "false")
+                elseif("${_cfg_short}" IN_LIST LITE_RUNTIME_GATED_FEATURES)
+                    set(_cfg_enabled "gated")
                 endif()
-                # A disabled feature never reaches Feature::Load, so it has no
-                # version and Info.ini records an empty one.
+                # Keyed off the strip set rather than the boot profile because
+                # Info.ini's Enabled mirrors Feature::loaded: an unshipped
+                # feature is enabled at boot, but Feature::Load still returns
+                # early with loaded = false while its .ini is absent. Once the
+                # user installs it that flips, and the runtime then correctly
+                # discards this cache and recompiles.
+                #
+                # A feature that never reaches Feature::Load has no version, and
+                # Info.ini records an empty one.
                 set(_cfg_version "")
-                if(_cfg_enabled STREQUAL "true")
+                if(NOT _cfg_enabled STREQUAL "false")
                     file(READ "${_cfg}" _cfg_text)
                     string(REGEX MATCH "[Vv]ersion[ \t]*=[ \t]*([0-9]+-[0-9]+-[0-9]+)" _ "${_cfg_text}")
                     if(DEFINED CMAKE_MATCH_1)
@@ -579,13 +669,31 @@ if(LITE_PACKAGE)
             endforeach()
 
             set(FEATURE_PATHS ${_lite_kept})
+            set(_lite_shipped_off "")
+            foreach(_lite_name IN LISTS _lite_disabled_names)
+                if("${_lite_name}" IN_LIST LITE_SHIPPED_DISABLED_FEATURES)
+                    list(APPEND _lite_shipped_off "${_lite_name}")
+                endif()
+            endforeach()
+
             list(LENGTH _lite_dropped _lite_dropped_count)
+            list(LENGTH _lite_dropped_unshipped _lite_unshipped_count)
             list(LENGTH _lite_kept _lite_kept_count)
             message(
-                "\tLite package: shipping ${_lite_kept_count} feature folders, dropped ${_lite_dropped_count} disabled by the profile"
+                "\tLite package: shipping ${_lite_kept_count} feature folders, dropped ${_lite_dropped_count} disabled by the profile, ${_lite_unshipped_count} not redistributed"
             )
             foreach(_lite_folder IN LISTS _lite_dropped)
-                message("\t\tdropped: ${_lite_folder}")
+                message("\t\tdropped (disabled at boot): ${_lite_folder}")
+            endforeach()
+            foreach(_lite_folder IN LISTS _lite_dropped_unshipped)
+                message(
+                    "\t\tdropped (not redistributed, still enabled at boot): ${_lite_folder}"
+                )
+            endforeach()
+            foreach(_lite_name IN LISTS _lite_shipped_off)
+                message(
+                    "\t\tshipped but off at boot: ${_lite_name}"
+                )
             endforeach()
         endif()
     endif()
@@ -1407,6 +1515,7 @@ if(LITE_PACKAGE)
             -DCACHE_SRC=${LITE_GAME_SHADERCACHE}
             -DCACHE_DEST=${LITE_SHADER_CACHE_DIR}
             -DSHADER_DIR=${AIO_DIR}/Shaders
+            -DEXPECT_FILE=${CMAKE_CURRENT_BINARY_DIR}/lite_cache_expect.txt
             -P
             "${CMAKE_SOURCE_DIR}/cmake/SnapshotShaderCache.cmake"
         COMMENT "Snapshotting game shader cache into ${LITE_SHADER_CACHE_DIR}"

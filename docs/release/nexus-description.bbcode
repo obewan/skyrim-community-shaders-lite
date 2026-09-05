@@ -3,7 +3,9 @@
 
 Community Shaders compiles several thousand shader permutations the first time you launch it. On a fast CPU that is a few minutes; on a slower one it can be closer to ten, and it happens again every time the plugin or a feature updates. This build ships those shaders already compiled, so the first launch goes straight into the game.
 
-[b]What this is not:[/b] this is not a performance mod. "Lite" refers to the download size and the removed first-launch wait, [i]not[/i] to framerate. In-game performance is the same as Community Shaders with the same features enabled. Running fewer features saves a little compile time, but the startup win here comes almost entirely from the bundled cache.[/size]
+[b]What this is not:[/b] this is not a performance mod. "Lite" refers to the download size and the removed first-launch wait, [i]not[/i] to framerate. In-game performance is the same as Community Shaders with the same features enabled. Running fewer features saves a little compile time, but the startup win here comes almost entirely from the bundled cache.
+
+One feature included here, [b]Grass Optimizations[/b], does improve grass performance — but it is a Community Shaders feature available to everyone, not something this repack adds. You would get the same result installing it yourself on top of full Community Shaders.[/size]
 
 [size=4][b]Installation instructions[/b][/size]
 [size=3][b]Install[/b]
@@ -16,32 +18,44 @@ Community Shaders compiles several thousand shader permutations the first time y
 
 [b]If it does compile on first launch[/b], the bundled cache was rejected. That is expected and harmless if you have changed the enabled features, or if another mod overwrites files in [font=Courier New]Data\Shaders[/font]. Let it finish once and it will be cached from then on.
 
+The most common cause is a leftover [font=Courier New]Data\SKSE\Plugins\CommunityShaders\SettingsUser.json[/font] from a previous Community Shaders install. That file records your own feature choices and takes priority over the profile shipped here, so the bundled cache no longer matches what actually loads. Delete it before launching to use the shipped profile and keep the instant first launch — that also resets any settings you had tuned.
+
 [b]Uninstall[/b]
 Remove the mod with your mod manager, then delete [font=Courier New]Data\ShaderCache[/font] if it remains. That folder is generated at runtime and mod managers do not always clean it up.[/size]
 
 [size=4][b]Main features[/b][/size]
-[size=3][b]28 features enabled out of the box[/b]
-Cloud Shadows, Dynamic Cubemaps, Effects 11, Exponential Height Fog, Extended Materials, Grass Collision, Grass Lighting, HDR Display, Image Based Lighting, Interior Sun, Inverse Square Lighting, LOD Blending, Light Limit Fix, Linear Lighting, Performance Overlay, Screen Space GI, Screen Space Shadows, Sky Sync, Skylighting, Terrain Blending, Terrain Shadows, Terrain Variation, True PBR, Upscaling, Volumetric Lighting, Volumetric Shadows, Water Effects, Wetness Effects.
+[size=3][b]31 features enabled out of the box[/b]
+Cloud Shadows, Dynamic Cubemaps, Exponential Height Fog, Extended Materials, Extended Translucency, Grass Collision, Grass Lighting, Grass Optimizations, HDR Display, Horizon Fix, Image Based Lighting, Interior Sun, Inverse Square Lighting, LOD Blending, Light Limit Fix, Linear Lighting, Performance Overlay, Screen Space GI, Screen Space Shadows, Sky Sync, Skylighting, Subsurface Scattering, Terrain Blending, Terrain Shadows, Terrain Variation, True PBR, Upscaling, Volumetric Lighting, Volumetric Shadows, Water Effects, Wetness Effects.
 
 All of them can be toggled in the in-game menu ([b]END[/b] by default) like in stock Community Shaders.
 
-[b]3,455 precompiled shaders included[/b]
+[b]3,454 precompiled shaders included[/b]
 Verified optimized — every shader in the bundle is compiled with full optimisation, none carry debug builds.
 
-[b]11 features are not included[/b]
-Four are developer and debug tools most players never use: CS Editor, RenderDoc, Remote Control, Screenshot.
-Seven are visual features left out to keep the package small: Extended Translucency, Hair Specular, Horizon Fix, Skin, Subsurface Scattering, Terrain Helper, Unified Water.
+[b]1 feature is included but switched off[/b]
+[b]Unified Water[/b] ships in the package but starts disabled, because it is still a [b]beta[/b] rewrite of water rendering and Community Shaders does not turn it on by default either. Everything it needs is installed — enable it in the menu under [b]Disable at Boot[/b] and restart. Doing so triggers a one-off shader recompile, because the bundled cache is built with it off.
 
-These are [b]not shipped at all[/b], so they cannot simply be switched on in the menu. If you want any of them, use full Community Shaders or install that feature's standalone addon — the plugin still recognises them and will load them normally.
+[b]8 features are not included[/b]
+Four are developer and debug tools most players never use: [b]CS Editor, Remote Control, RenderDoc, Screenshot[/b]. These are part of core Community Shaders rather than separate addons, so they cannot be added back on top of this build — if you need them, use full Community Shaders.
+
+Three are visual features left out to keep the package small: [b]Hair Specular, Skin, Terrain Helper[/b]. These are genuine addons: install the standalone version of any of them and this build loads it normally. It has to be current enough — Hair Specular 1.1.2, Skin 0.2.0, Terrain Helper 1.0.1 or newer.
+
+One, [b]Effects 11[/b], is published by its own authors as a separate mod and is not redistributed here — see below.
+
+Adding any feature back triggers a one-off shader recompile on the next launch, since the bundled cache is built for the shipped set.
 
 [b]A note on Effects 11[/b]
-Effects 11 is included, but it is a runtime for ENB-format [font=Courier New].fx[/font] effect files, not an effect in itself. Without a preset it stays inert and costs nothing. To use it, place a preset's [font=Courier New]enbseries\[/font] folder and [font=Courier New]enbseries.ini[/font] in your game root — [b]without[/b] ENB's [font=Courier New]d3d11.dll[/font], which would conflict with Community Shaders. Not every preset behaves identically under this implementation.[/size]
+Effects 11 is [b]not included[/b] in this package. It is distributed by its own authors as a separate mod, and this repack has no right to redistribute it.
+
+Get it from [url=https://mod.pub/skyrim-se/415-effects-11]mod.pub[/url] and install it alongside this build. Nothing else is needed — the plugin leaves Effects 11 switched on, so it loads by itself on the next launch. Not shipping something is not the same as blocking it. The first launch after installing it recompiles shaders once, because the bundled cache is built without it.
+
+It is a runtime for ENB-format [font=Courier New].fx[/font] effect files, not an effect in itself, so it also needs a preset: place the preset's [font=Courier New]enbseries\[/font] folder and [font=Courier New]enbseries.ini[/font] in your game root — [b]without[/b] ENB's [font=Courier New]d3d11.dll[/font], which would conflict with Community Shaders. Not every preset behaves identically under this implementation.[/size]
 
 [size=4][b]If you want more than this[/b][/size]
 [size=3]This build deliberately trims. If it is not enough for you, go bigger — these are all better answers than asking for features to be added here:
 
 [list]
-[*][b][url=https://www.nexusmods.com/skyrimspecialedition/mods/86492]Community Shaders[/url][/b] — the full thing. Every feature, including the seven visual ones left out here, and the ones released after this build. The trade-off is the first-launch shader compile this package exists to avoid.
+[*][b][url=https://www.nexusmods.com/skyrimspecialedition/mods/86492]Community Shaders[/url][/b] — the full thing. Every feature, including the developer tools left out here, and the ones released after this build. The trade-off is the first-launch shader compile this package exists to avoid.
 [*][b][url=https://www.nexusmods.com/skyrimspecialedition/mods/180419]Open Shaders[/url][/b] — a fork of Community Shaders by alandtse, one of the Community Shaders founders. It carries features that are not in Community Shaders itself, such as Foliage Lighting, so it is the place to look if you want [i]more[/i] rather than less.
 [*][b][url=http://enbdev.com/]ENBSeries[/url][/b] — the long-established option, with a huge library of presets. A different renderer with different strengths, not a superset of this one.
 [/list]

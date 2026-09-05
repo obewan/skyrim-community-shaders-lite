@@ -8,6 +8,8 @@
 #
 # Required: CACHE_SRC (the game's Data/ShaderCache), CACHE_DEST, SHADER_DIR
 # (the shader tree that produced it, i.e. the AIO's Shaders folder).
+# Optional: EXPECT_FILE, the build's expected feature state, to confirm the game
+# actually ran the profile being packaged.
 
 foreach(_required CACHE_SRC CACHE_DEST SHADER_DIR)
     if(NOT DEFINED ${_required})
@@ -31,6 +33,36 @@ if(NOT EXISTS "${CACHE_SRC}/Info.ini")
         "${CACHE_SRC} has no Info.ini, so the runtime never finished writing the "
         "cache. Let shader compilation complete before snapshotting."
     )
+endif()
+
+# Confirm the game ran the profile this build ships. The runtime merges
+# SettingsUser.json over the shipped SettingsDefault.json by whole top-level key,
+# so a stale user config silently overrides the profile: the game compiles the
+# wrong feature set, writes a perfectly well-formed Info.ini for it, and nothing
+# about the run looks wrong. Snapshotting that would overwrite the bundled cache
+# -- which is gitignored and only regenerable by another full game launch -- with
+# one StageShaderCache would later reject anyway. Catch it here, before the copy.
+if(DEFINED EXPECT_FILE AND EXISTS "${EXPECT_FILE}")
+    include("${CMAKE_CURRENT_LIST_DIR}/CacheInfoProblems.cmake")
+    cache_info_problems("${CACHE_SRC}" "${EXPECT_FILE}" _snapshot_problems)
+    list(LENGTH _snapshot_problems _snapshot_problem_count)
+    if(_snapshot_problem_count GREATER 0)
+        string(REPLACE ";" "
+    " _snapshot_problem_text "${_snapshot_problems}")
+        message(
+            FATAL_ERROR
+            "The generated cache at ${CACHE_SRC} does not match the profile this build "
+            "ships:
+"
+            "    ${_snapshot_problem_text}
+"
+            "The game ran a different feature set, so these blobs are not the ones to "
+            "bundle. The usual cause is a leftover SettingsUser.json in "
+            "Data/SKSE/Plugins/CommunityShaders, which takes priority over the shipped "
+            "SettingsDefault.json. Align or remove it, delete Data/ShaderCache, launch "
+            "again and let compilation finish, then re-run this target."
+        )
+    endif()
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/ShaderTreeDigest.cmake")
