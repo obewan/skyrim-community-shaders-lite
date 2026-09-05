@@ -5,7 +5,7 @@ Community Shaders compiles several thousand shader permutations the first time y
 
 [b]What this is not:[/b] this is not a performance mod. "Lite" refers to the download size and the removed first-launch wait, [i]not[/i] to framerate. In-game performance is the same as Community Shaders with the same features enabled. Running fewer features saves a little compile time, but the startup win here comes almost entirely from the bundled cache.
 
-One feature included here, [b]Grass Optimizations[/b], does improve grass performance — but it is a Community Shaders feature available to everyone, not something this repack adds. You would get the same result installing it yourself on top of full Community Shaders.[/size]
+[b]Upscaling[/b] ships set to [b]TAA[/b] rather than DLSS or FSR. Upscaling renders the game below your screen resolution and scales it back up, which trades image quality for framerate and is a choice worth making deliberately — switch it in the menu under Upscaling if you want it.[/size]
 
 [size=4][b]Installation instructions[/b][/size]
 [size=3][b]Install[/b]
@@ -24,16 +24,20 @@ The most common cause is a leftover [font=Courier New]Data\SKSE\Plugins\Communit
 Remove the mod with your mod manager, then delete [font=Courier New]Data\ShaderCache[/font] if it remains. That folder is generated at runtime and mod managers do not always clean it up.[/size]
 
 [size=4][b]Main features[/b][/size]
-[size=3][b]31 features enabled out of the box[/b]
-Cloud Shadows, Dynamic Cubemaps, Exponential Height Fog, Extended Materials, Extended Translucency, Grass Collision, Grass Lighting, Grass Optimizations, HDR Display, Horizon Fix, Image Based Lighting, Interior Sun, Inverse Square Lighting, LOD Blending, Light Limit Fix, Linear Lighting, Performance Overlay, Screen Space GI, Screen Space Shadows, Sky Sync, Skylighting, Subsurface Scattering, Terrain Blending, Terrain Shadows, Terrain Variation, True PBR, Upscaling, Volumetric Lighting, Volumetric Shadows, Water Effects, Wetness Effects.
+[size=3][b]30 features enabled out of the box[/b]
+Cloud Shadows, Dynamic Cubemaps, Exponential Height Fog, Extended Materials, Extended Translucency, Grass Collision, Grass Lighting, HDR Display, Horizon Fix, Image Based Lighting, Interior Sun, Inverse Square Lighting, LOD Blending, Light Limit Fix, Linear Lighting, Performance Overlay, Screen Space GI, Screen Space Shadows, Sky Sync, Skylighting, Subsurface Scattering, Terrain Blending, Terrain Shadows, Terrain Variation, True PBR, Upscaling, Volumetric Lighting, Volumetric Shadows, Water Effects, Wetness Effects.
 
 All of them can be toggled in the in-game menu ([b]END[/b] by default) like in stock Community Shaders.
 
-[b]3,454 precompiled shaders included[/b]
+[b]3,459 precompiled shaders included[/b]
 Verified optimized — every shader in the bundle is compiled with full optimisation, none carry debug builds.
 
-[b]1 feature is included but switched off[/b]
-[b]Unified Water[/b] ships in the package but starts disabled, because it is still a [b]beta[/b] rewrite of water rendering and Community Shaders does not turn it on by default either. Everything it needs is installed — enable it in the menu under [b]Disable at Boot[/b] and restart. Doing so triggers a one-off shader recompile, because the bundled cache is built with it off.
+[b]2 features are included but switched off[/b]
+[b]Unified Water[/b] is still a [b]beta[/b] rewrite of water rendering, and Community Shaders does not turn it on by default either.
+
+[b]Grass Optimizations[/b] is a very recent addition to Community Shaders. It can improve grass performance a lot, but in testing it removed grass entirely on one setup, so it is off here rather than risking an empty landscape out of the box. Try it — if your grass looks right, keep it.
+
+Both are fully installed: enable either in the menu under [b]Disable at Boot[/b] and restart. Doing so triggers a one-off shader recompile, because the bundled cache is built with them off.
 
 [b]8 features are not included[/b]
 Four are developer and debug tools most players never use: [b]CS Editor, Remote Control, RenderDoc, Screenshot[/b]. These are part of core Community Shaders rather than separate addons, so they cannot be added back on top of this build — if you need them, use full Community Shaders.

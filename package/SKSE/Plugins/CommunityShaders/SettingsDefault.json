@@ -9,7 +9,7 @@
     "ExtendedTranslucency": false,
     "GrassCollision": false,
     "GrassLighting": false,
-    "GrassOptimizations": false,
+    "GrassOptimizations": true,
     "HDRDisplay": false,
     "HairSpecular": true,
     "HorizonFix": false,
@@ -40,5 +40,9 @@
     "VolumetricShadows": false,
     "WaterEffects": false,
     "WetnessEffects": false
+  },
+  "Upscaling": {
+    "upscaleMethod": 1,
+    "upscaleMethodNoDLSS": 1
   }
 }

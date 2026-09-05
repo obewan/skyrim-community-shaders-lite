@@ -121,7 +121,7 @@ set(LITE_UNSHIPPED_FEATURES
 #
 # Short names, matching the .ini basename rather than the folder name.
 set(LITE_SHIPPED_DISABLED_FEATURES
-    "UnifiedWater"
+    "UnifiedWater;GrassOptimizations"
     CACHE STRING
     "Feature short names whose payload ships in the lite AIO even though the profile disables them at boot."
 )
