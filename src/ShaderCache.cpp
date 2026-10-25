@@ -4094,9 +4094,12 @@ namespace SIE
 
 		// Log completion outside the lock
 		if (shouldLogCompletion) {
-			logger::debug("Compilation completed in {} ms", GetHumanTime(completionTimeMs));
+			// Info, not debug: raising the log level to debug switches to unoptimized
+			// compiles, so a debug-level timing would not measure a real run
+			logger::info("Compilation completed in {} ({} tasks, {} completed, {} failed)", GetHumanTime(completionTimeMs),
+				totalTasks.load(), completedTasks.load(), failedTasks.load());
 			auto& compileDedupe = SShaderCache::GetCompileDedupe();
-			logger::debug("Compile dedupe: {} compiles shared, {} restored from the persistent store, {} MiB retained, {} blobs over the retention cap",
+			logger::info("Compile dedupe: {} compiles shared, {} restored from the persistent store, {} MiB retained, {} blobs over the retention cap",
 				contentDedupeTasks.load(), contentStoreHitTasks.load(), compileDedupe.RetainedBytes() >> 20, compileDedupe.DroppedBlobs());
 			compileDedupe.Clear();
 
