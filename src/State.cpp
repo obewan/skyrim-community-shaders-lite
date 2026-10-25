@@ -650,6 +650,7 @@ void State::SaveCoreToJson(json& settings)
 	advanced["Frame Annotations"] = frameAnnotations;
 	advanced["Partial Precision"] = enablePartialPrecision.load(std::memory_order_relaxed);
 	advanced["Content Store"] = enableContentStore.load(std::memory_order_relaxed);
+	advanced["Imnot Content Store Default"] = true;
 	advanced["Content Store Max MB"] = contentStoreMaxMB.load(std::memory_order_relaxed);
 	settings["Advanced"] = advanced;
 
@@ -750,7 +751,9 @@ void State::LoadFromJson(nlohmann::json& settings)
 			frameAnnotations = advanced["Frame Annotations"];
 		if (advanced.contains("Partial Precision") && advanced["Partial Precision"].is_boolean())
 			enablePartialPrecision.store(advanced["Partial Precision"].get<bool>(), std::memory_order_relaxed);
-		if (advanced.contains("Content Store") && advanced["Content Store"].is_boolean())
+		// Stock Community Shaders saves the store as off whether or not the user chose that, so a
+		// config without the Imnot marker keeps the new default once; after that the saved value wins.
+		if (advanced.contains("Content Store") && advanced["Content Store"].is_boolean() && advanced.contains("Imnot Content Store Default"))
 			enableContentStore.store(advanced["Content Store"].get<bool>(), std::memory_order_relaxed);
 		if (advanced.contains("Content Store Max MB") && advanced["Content Store Max MB"].is_number_unsigned())
 			contentStoreMaxMB.store(static_cast<uint32_t>(std::clamp<uint64_t>(advanced["Content Store Max MB"].get<uint64_t>(), kContentStoreMinMB, kContentStoreMaxMB)), std::memory_order_relaxed);
