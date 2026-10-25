@@ -15,7 +15,11 @@ namespace Plugin
 		// clang-format on
 	};
 
+	/// Runtime identity: DLL, log and data-path name. Not the product name users see.
 	inline constexpr auto NAME = "@PROJECT_NAME@"sv;
+
+	/// Product name shown to users, e.g. in the menu title and startup log line.
+	inline constexpr auto PRODUCT_NAME = "@PRODUCT_NAME@"sv;
 
 	/// Full git describe string, e.g. "v1.4.11", "v1.4.11-3-gabcdef1", "v1.4.11-3-gabcdef1-dirty".
 	/// Matches "v{VERSION}" exactly on a clean tagged release build.

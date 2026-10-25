@@ -28,7 +28,7 @@ void MenuHeaderRenderer::RenderHeader(bool isDocked, bool showLogo, bool canShow
 
 	auto versionStr = Util::GetFormattedVersion(Plugin::VERSION);
 	auto expectedTag = std::format("v{}", versionStr);
-	auto title = std::format("Community Shaders {}", versionStr);
+	auto title = std::format("{} {}", Plugin::PRODUCT_NAME, versionStr);
 	auto actionIcons = BuildActionIcons(canShowIcons, uiIcons);
 
 	// Dev builds: muted build label after the title

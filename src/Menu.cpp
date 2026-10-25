@@ -775,7 +775,7 @@ void Menu::DrawSettings()
 	resetLayout = false;
 	auto versionStr = Util::GetFormattedVersion(Plugin::VERSION);
 	auto expectedTag = std::format("v{}", versionStr);
-	auto displayTitle = Plugin::BUILD_DESCRIBE == expectedTag ? I18n::GetSingleton()->Format("menu.window_title", { { "version", versionStr } }, "Community Shaders {version}") : I18n::GetSingleton()->Format("menu.window_title_dev", { { "version", versionStr }, { "build", Util::GetBuildLabel() } }, "Community Shaders {version} {build}");
+	auto displayTitle = Plugin::BUILD_DESCRIBE == expectedTag ? I18n::GetSingleton()->Format("menu.window_title", { { "name", std::string(Plugin::PRODUCT_NAME) }, { "version", versionStr } }, "{name} {version}") : I18n::GetSingleton()->Format("menu.window_title_dev", { { "name", std::string(Plugin::PRODUCT_NAME) }, { "version", versionStr }, { "build", Util::GetBuildLabel() } }, "{name} {version} {build}");
 	// Use ### to keep a stable window ID regardless of build suffix, preserving docking state
 	auto title = std::format("{}###CommunityShaders", displayTitle);
 

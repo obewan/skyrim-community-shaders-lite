@@ -57,7 +57,7 @@ void HomePageRenderer::RenderWelcomeSection()
 	auto versionStr = Util::GetFormattedVersion(Plugin::VERSION);
 	auto expectedTag = std::format("v{}", versionStr);
 	auto* i18n = I18n::GetSingleton();
-	std::string titleWithVersion = i18n->Format("menu.home.welcome", { { "version", versionStr } }, "Welcome to Community Shaders {version}");
+	std::string titleWithVersion = i18n->Format("menu.home.welcome", { { "name", std::string(Plugin::PRODUCT_NAME) }, { "version", versionStr } }, "Welcome to {name} {version}");
 	ImVec2 titleSize = ImGui::CalcTextSize(titleWithVersion.c_str());
 	ImGui::SetCursorPosX(std::max((windowSize.x - titleSize.x) * 0.5f, ImGui::GetCursorPosX()));
 	ImGui::TextWrapped("%s", titleWithVersion.c_str());

@@ -73,6 +73,17 @@ message("\tAIO Zip to dist: ${AIO_ZIP_TO_DIST}")
 message("\tTracy profiler: ${TRACY_SUPPORT}")
 message("\tNsight Perf: ${NVPERF_SUPPORT}")
 
+# The product name shown to users, and the basename for everything written to
+# dist/. Deliberately decoupled from PROJECT_NAME, which is the runtime
+# identity: it feeds the DLL and log filenames, Plugin::NAME and the
+# CommunityShaders data paths that separately installed Community Shaders
+# addons resolve against. Renaming that would break those addons and orphan
+# existing user settings and shader caches. The product is renamed; the
+# runtime stays compatible.
+set(PRODUCT_NAME "Imnot Shaders")
+set(PACKAGE_BASENAME "ImnotShaders")
+message("\tProduct name: ${PRODUCT_NAME}")
+
 # #######################################################################################################################
 # # Build version info from git
 # #######################################################################################################################
@@ -1221,7 +1232,7 @@ if(ZIP_TO_DIST)
         COMMAND ${CMAKE_COMMAND} -E remove_directory "${ZIP_DIR}/Shaders/Tests"
     )
 
-    set(TARGET_ZIP "${PROJECT_NAME}-${UTC_NOW}.zip")
+    set(TARGET_ZIP "${PACKAGE_BASENAME}-${UTC_NOW}.zip")
     message("Zipping ${ZIP_DIR} to ${CMAKE_SOURCE_DIR}/dist/${TARGET_ZIP}")
     add_custom_command(
         TARGET ${PROJECT_NAME}
@@ -1269,9 +1280,9 @@ if(AIO_ZIP_TO_DIST)
     # keeps the UTC timestamp as before, but the command writes a stable
     # stamp file that CMake can track as OUTPUT.
     if(SEVENZ_EXECUTABLE)
-        set(TARGET_AIO_ZIP "${PROJECT_NAME}_AIO-${UTC_NOW}.7z")
+        set(TARGET_AIO_ZIP "${PACKAGE_BASENAME}_AIO-${UTC_NOW}.7z")
     else()
-        set(TARGET_AIO_ZIP "${PROJECT_NAME}_AIO-${UTC_NOW}.zip")
+        set(TARGET_AIO_ZIP "${PACKAGE_BASENAME}_AIO-${UTC_NOW}.zip")
     endif()
     set(AIO_ARCHIVE "${CMAKE_SOURCE_DIR}/dist/${TARGET_AIO_ZIP}")
     set(AIO_ZIP_STAMP "${CMAKE_CURRENT_BINARY_DIR}/aio_package.stamp")
@@ -1320,7 +1331,7 @@ endif()
 set(DIST_PATH "${CMAKE_SOURCE_DIR}/dist")
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/dist")
 
-set(CORE_PACKAGE "${DIST_PATH}/${PROJECT_NAME}-${UTC_NOW}.zip")
+set(CORE_PACKAGE "${DIST_PATH}/${PACKAGE_BASENAME}-${UTC_NOW}.zip")
 
 # CORE_SOURCES = all content copied to the AIO directory + the SKSE plugin dll.
 # No CONFIGURE_DEPENDS: packaging runs from a fresh CI configure, and omitting
@@ -1407,9 +1418,9 @@ endif()
 
 # Manual AIO package target
 if(SEVENZ_EXECUTABLE)
-    set(AIO_PACKAGE "${DIST_PATH}/${PROJECT_NAME}_AIO-${UTC_NOW}.7z")
+    set(AIO_PACKAGE "${DIST_PATH}/${PACKAGE_BASENAME}_AIO-${UTC_NOW}.7z")
 else()
-    set(AIO_PACKAGE "${DIST_PATH}/${PROJECT_NAME}_AIO-${UTC_NOW}.zip")
+    set(AIO_PACKAGE "${DIST_PATH}/${PACKAGE_BASENAME}_AIO-${UTC_NOW}.zip")
 endif()
 if(TARGET PREPARE_AIO)
     if(SEVENZ_EXECUTABLE)
