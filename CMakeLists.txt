@@ -69,23 +69,28 @@ message("\tAIO Zip to dist: ${AIO_ZIP_TO_DIST}")
 message("\tLite package: ${LITE_PACKAGE}")
 message("\tTracy profiler: ${TRACY_SUPPORT}")
 
-# Baked into Plugin::EDITION and shown in the UI in place of the git describe
-# string, so a lite build is identifiable at a glance. Does not affect
-# PROJECT_NAME, the DLL name, the log filename or Plugin::VERSION -- changing
-# those would rename shipped files and invalidate any precompiled shader cache.
+# The product name. Baked into Plugin::EDITION and shown in the UI in place of
+# the git describe string, so the build is identifiable at a glance.
+#
+# Deliberately does NOT affect PROJECT_NAME, the DLL name, the log filename or
+# Plugin::VERSION. Those are the runtime identity: renaming them would rename
+# shipped files, invalidate any precompiled shader cache, and break separately
+# installed Community Shaders addons (Hair Specular, Skin, Terrain Helper),
+# which resolve their paths against the CommunityShaders name. The product is
+# renamed; the runtime stays compatible.
 if(LITE_PACKAGE)
-    set(PLUGIN_EDITION "Lite")
+    set(PLUGIN_EDITION "Nordic Shaders")
 else()
     set(PLUGIN_EDITION "")
 endif()
 
-# Basename for everything written to dist/. A lite build must not produce
-# archives named like the full one -- they differ in feature set and in whether
+# Basename for everything written to dist/. This build must not produce archives
+# named like stock Community Shaders -- they differ in feature set and in whether
 # they carry a precompiled shader cache, and the timestamped names are otherwise
 # indistinguishable at a glance. PROJECT_NAME itself is deliberately untouched:
 # it feeds the DLL and log filenames and the SKSE plugin identity.
 if(LITE_PACKAGE)
-    set(PACKAGE_BASENAME "${PROJECT_NAME}-Lite")
+    set(PACKAGE_BASENAME "NordicShaders")
 else()
     set(PACKAGE_BASENAME "${PROJECT_NAME}")
 endif()
