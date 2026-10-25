@@ -1,9 +1,16 @@
 [size=4][b]Description[/b][/size]
-[size=3]An unofficial repack of [url=https://www.nexusmods.com/skyrimspecialedition/mods/86492]Community Shaders[/url] with a curated feature profile and a [b]precompiled shader cache[/b] bundled in.
+[size=3]An unofficial repack of [url=https://www.nexusmods.com/skyrimspecialedition/mods/86492]Community Shaders[/url] built against a [b]newer Community Shaders than the current Nexus release[/b], with a curated feature profile and a [b]precompiled shader cache[/b] bundled in.
+
+[b]Why this exists[/b]
+Community Shaders 1.8.4, the version currently on Nexus, was released on 26 August 2026. Support for [b]Skyrim 1.7.99 and newer[/b] landed two days later, on the 28th, so it is not in that release. This package is built from the 1.9.0 line, which does include it. If you are on a current Skyrim runtime, that is the difference — not the shader compile.
+
+To be clear about what that means: 1.9.0 is a [b]release candidate[/b], not a final Community Shaders release. That is the trade-off, and it is where the runtime support lives. When Community Shaders publishes 1.9 properly, most of the reason to pick this over the real thing disappears — and at that point you should just use the real thing.
 
 Community Shaders compiles several thousand shader permutations the first time you launch it. On a fast CPU that is a few minutes; on a slower one it can be closer to ten, and it happens again every time the plugin or a feature updates. This build ships those shaders already compiled, so the first launch goes straight into the game.
 
-[b]What this is not:[/b] this is not a performance mod. "Lite" refers to the download size and the removed first-launch wait, [i]not[/i] to framerate. In-game performance is the same as Community Shaders with the same features enabled. Running fewer features saves a little compile time, but the startup win here comes almost entirely from the bundled cache.
+[b]What this is not:[/b] this is not a performance mod. "Lite" refers to the trimmed feature set and the removed first-launch wait, [i]not[/i] to framerate. In-game performance is the same as Community Shaders with the same features enabled.
+
+It is not a smaller download either. The archive bundles roughly 113 MB of precompiled shaders, so it is no smaller than stock Community Shaders and may be larger. What you save is the compile, not disk space.
 
 [b]Upscaling is off by default[/b], so the game renders at your full resolution. In the menu the Upscaling feature is set to [b]TAA[/b], which is anti-aliasing only — it replaces Skyrim's own temporal anti-aliasing and does not scale anything. DLSS and FSR are the ones that upscale: they render below your screen resolution and scale back up, trading image quality for framerate. That is worth choosing deliberately, so switch it under Upscaling if you want it.[/size]
 
@@ -81,6 +88,9 @@ Uninstall one properly before installing another, and delete [font=Courier New]D
 [/list]
 
 [b]Do not install alongside Community Shaders[/b] — this replaces it. Do not install alongside ENBSeries' [font=Courier New]d3d11.dll[/font].[/size]
+
+[size=4][b]Screenshots[/b][/size]
+[size=3]The screenshots here are mine, and they are not this mod's best advertisement — I am a programmer, not a screenarcher. If you have better ones taken with this build, post them and I will gladly add them to the page with credit.[/size]
 
 [size=4][b]Shout outs[/b][/size]
 [size=3]All credit for the actual work goes to the [url=https://github.com/community-shaders/skyrim-community-shaders]Community Shaders[/url] team and its contributors.
