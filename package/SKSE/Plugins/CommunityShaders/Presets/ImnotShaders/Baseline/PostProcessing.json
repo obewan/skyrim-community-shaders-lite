@@ -1,0 +1,15 @@
+{
+  "_metadata": {
+    "description": "Keep only tone mapping and auto exposure; the full-screen effects start off and the vanilla equivalents run instead."
+  },
+  "Depth of Field": { "enabled": false },
+  "Vignette": { "enabled": false },
+  "Local Exposure": { "enabled": false },
+  "Motion Blur": { "enabled": false },
+  "Physical Glare": { "enabled": false },
+  "COD Bloom": { "enabled": false },
+  "Lens Flare": { "enabled": false },
+  "LUT": { "enabled": false },
+  "Camera": { "enabled": false },
+  "Border": { "enabled": false }
+}

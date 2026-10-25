@@ -1,0 +1,7 @@
+{
+  "name": "Imnot Shaders",
+  "version": "1.0.0",
+  "author": "Imnotfamous",
+  "description": "Low-end defaults for Imnot Shaders: upscaling off, Post Processing reduced to tone mapping and auto exposure, parallax self-shadowing off. Remove this Baseline to fall back to the stock Community Shaders defaults.",
+  "type": "Baseline"
+}

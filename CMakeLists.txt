@@ -591,6 +591,59 @@ endforeach()
 set(FEATURE_PATHS ${_valid_feature_paths})
 unset(_valid_feature_paths)
 unset(_feat_files)
+
+# Feature folders Imnot Shaders does not ship: too heavy for low-end GPUs, or
+# developer tools. A feature whose .ini is absent never loads (Feature::Load
+# returns early, silently), so leaving the folder out is the whole removal; the
+# C++ stays in the DLL to keep upstream merges cheap. Every shader include of
+# these features is guarded by the feature's define, so nothing else breaks.
+#
+# FeatureVersions.h is generated from FEATURE_CONFIG_FILES, an independent glob,
+# so these features stay known: a user who installs one separately (a non-CORE
+# standalone addon) still gets it loaded rather than rejected.
+#
+# Folder names under features/, not short names.
+set(IMNOT_EXCLUDED_FEATURES
+    "CS Editor"
+    "Effects11"
+    "Grass Collision"
+    "Grass Optimizations"
+    "Interior Sun"
+    "Linear Lighting"
+    "Remote Control"
+    "RenderDoc"
+    "Scene Manager"
+    "Screen Space GI"
+    "Screen-Space Shadows"
+    "Screenshot"
+    "Subsurface Scattering"
+    "Terrain Shadows"
+    "Terrain Shadows - Heightmaps"
+    "Unified Water"
+    "Volumetric Lighting"
+    "Volumetric Shadows"
+)
+set(_imnot_kept "")
+set(_imnot_dropped 0)
+foreach(_fpath IN LISTS FEATURE_PATHS)
+    get_filename_component(_imnot_folder "${_fpath}" NAME)
+    if("${_imnot_folder}" IN_LIST IMNOT_EXCLUDED_FEATURES)
+        math(EXPR _imnot_dropped "${_imnot_dropped} + 1")
+    else()
+        list(APPEND _imnot_kept "${_fpath}")
+    endif()
+endforeach()
+list(LENGTH IMNOT_EXCLUDED_FEATURES _imnot_expected)
+if(NOT _imnot_dropped EQUAL _imnot_expected)
+    message(
+        FATAL_ERROR
+        "IMNOT_EXCLUDED_FEATURES names ${_imnot_expected} folders but only ${_imnot_dropped} exist under features/; a feature was renamed upstream."
+    )
+endif()
+set(FEATURE_PATHS ${_imnot_kept})
+list(LENGTH FEATURE_PATHS _imnot_kept_count)
+message("\tImnot package: shipping ${_imnot_kept_count} features, dropped ${_imnot_dropped}")
+unset(_imnot_kept)
 string(TIMESTAMP UTC_NOW "%Y-%m-%dT%H-%MZ" UTC)
 
 # Set AIO directory path used by multiple targets below

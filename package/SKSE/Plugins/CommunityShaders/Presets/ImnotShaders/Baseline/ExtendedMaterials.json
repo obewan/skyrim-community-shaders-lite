@@ -1,0 +1,6 @@
+{
+  "_metadata": {
+    "description": "Keep parallax, drop its self-shadowing: the second ray march is the most expensive part."
+  },
+  "EnableShadows": false
+}

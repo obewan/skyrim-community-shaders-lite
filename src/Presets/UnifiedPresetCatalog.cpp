@@ -40,6 +40,10 @@ namespace
 	/// Matches State::Save, so a state write leaves the file formatted as the user config always is.
 	constexpr int kUserSettingsIndent = 1;
 	constexpr const char* kBaselinePackIdsKey = "baselinePackIds";
+	/// Bundled Baseline pack holding the Imnot Shaders low-end defaults; enabled on a fresh install.
+	constexpr const char* kImnotDefaultsPackId = "ImnotShaders";
+	/// Marks the saved state as having been offered the Imnot defaults pack, so it is enabled only once.
+	constexpr const char* kImnotDefaultsOfferedKey = "imnotDefaultsOffered";
 	constexpr const char* kLegacyMetaFileName = "preset.json";
 	constexpr const char* kEffects11PackSubdir = UnifiedPresetCatalog::kEffects11PackSubdir;
 	// The colon keeps it out of the pack folder namespace, like orphan "e11:" ids.
@@ -329,8 +333,18 @@ void UnifiedPresetCatalog::LoadActiveState()
 	}
 	if (!state)
 		state = Util::FileHelpers::ReadJsonObject(Util::PathHelpers::GetUnifiedPresetsRealPath() / kLegacyActiveStateFileName, "active pack state");
-	if (!state)
+	// Imnot Shaders: enable the bundled low-end defaults pack once, on a fresh install or on the
+	// first launch after stock Community Shaders. The saved state then records the offer, so a
+	// user who removes the pack keeps it removed.
+	const auto offerImnotDefaults = [this]() {
+		std::error_code ec;
+		if (!IsBaselineEnabled(kImnotDefaultsPackId) && std::filesystem::exists(Util::PathHelpers::GetUnifiedPackPath(kImnotDefaultsPackId), ec))
+			baselinePackIds.push_back(kImnotDefaultsPackId);
+	};
+	if (!state) {
+		offerImnotDefaults();
 		return;
+	}
 	try {
 		if (const auto overrides = state->find(kSceneControlKey); overrides != state->end() && overrides->is_object()) {
 			for (const auto& [packId, choices] : overrides->items())
@@ -357,6 +371,8 @@ void UnifiedPresetCatalog::LoadActiveState()
 		pipelineRevision = 0;
 		sceneControlOverrides = json::object();
 	}
+	if (!state->contains(kImnotDefaultsOfferedKey))
+		offerImnotDefaults();
 }
 
 json UnifiedPresetCatalog::SerializeActiveState() const
@@ -364,6 +380,7 @@ json UnifiedPresetCatalog::SerializeActiveState() const
 	json state;
 	state["activePackId"] = activePackId;
 	state[kBaselinePackIdsKey] = baselinePackIds;
+	state[kImnotDefaultsOfferedKey] = true;
 	if (activePipeline) {
 		state[kPipelineKey] = magic_enum::enum_name(*activePipeline);
 		state[kPipelineRevisionKey] = pipelineRevision;

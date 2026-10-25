@@ -1,0 +1,7 @@
+{
+  "_metadata": {
+    "description": "Render at native resolution with the game's own anti-aliasing. DLSS and FSR stay available as an opt-in."
+  },
+  "upscaleMethod": 0,
+  "upscaleMethodNoDLSS": 0
+}
