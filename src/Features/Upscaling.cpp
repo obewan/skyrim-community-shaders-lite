@@ -73,6 +73,9 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChainUpscaling(
 	auto& upscaling = globals::features::upscaling;
 	upscaling.LoadUpscalingSDKs();
 
+	// Before anything reads Windowed: frame generation and HDR both treat the result as windowed.
+	Hooks::ReplaceExclusiveFullscreen(*pSwapChainDesc);
+
 	// FLIP_DISCARD requires BufferCount >= 2 and a flip-model-compatible (non-sRGB) format.
 	pSwapChainDesc->SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	if (pSwapChainDesc->BufferCount < 2)
@@ -151,6 +154,7 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChainUpscaling(
 				upscaling.PostBackendDevice();
 			}
 
+			Hooks::ApplyBorderlessWindow();
 			return S_OK;
 		} else {
 			logger::warn("[Frame Generation] FidelityFX DLLs are not loaded, skipping proxy");
@@ -179,6 +183,9 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChainUpscaling(
 		upscaling.CheckBackendFeatures(pAdapter);
 		upscaling.PostBackendDevice();
 	}
+
+	if (SUCCEEDED(ret))
+		Hooks::ApplyBorderlessWindow();
 
 	return ret;
 }

@@ -466,6 +466,30 @@ namespace PostProcessingExtensions
 	};
 }
 
+namespace
+{
+	// Set when the game asked for exclusive fullscreen and gets a borderless window instead.
+	bool borderlessReplacesExclusive = false;
+	HWND borderlessWindow = nullptr;
+}
+
+// The game still asks for exclusive fullscreen after creating the swap chain; with a borderless window
+// standing in for it, the request is acknowledged without the mode switch.
+struct IDXGISwapChain_SetFullscreenState
+{
+	static HRESULT WINAPI thunk(IDXGISwapChain* This, BOOL Fullscreen, IDXGIOutput* pTarget)
+	{
+		if (Fullscreen && borderlessReplacesExclusive) {
+			static bool logged = false;
+			if (!std::exchange(logged, true))
+				logger::info("Ignoring SetFullscreenState(TRUE): the borderless window stands in for exclusive fullscreen");
+			return S_OK;
+		}
+		return func(This, Fullscreen, pTarget);
+	}
+	static inline REL::Relocation<decltype(thunk)> func;
+};
+
 // DXGI rejects ResizeBuffers while any view of the back buffer is alive, leaving the old buffers in place.
 struct IDXGISwapChain_ResizeBuffers
 {
@@ -520,6 +544,35 @@ HRESULT WINAPI hk_CreateDXGIFactory(REFIID, void** ppFactory)
 	return ptrCreateDXGIFactory(__uuidof(IDXGIFactory4), ppFactory);
 }
 
+bool Hooks::ReplaceExclusiveFullscreen(DXGI_SWAP_CHAIN_DESC& a_desc)
+{
+	if (a_desc.Windowed)
+		return false;
+	a_desc.Windowed = TRUE;
+	borderlessReplacesExclusive = true;
+	borderlessWindow = a_desc.OutputWindow;
+	logger::info("Exclusive fullscreen requested at {}x{}; using a borderless window instead", a_desc.BufferDesc.Width, a_desc.BufferDesc.Height);
+	return true;
+}
+
+void Hooks::ApplyBorderlessWindow()
+{
+	if (!borderlessReplacesExclusive || !borderlessWindow)
+		return;
+	MONITORINFO monitorInfo{ .cbSize = sizeof(MONITORINFO) };
+	if (!GetMonitorInfoW(MonitorFromWindow(borderlessWindow, MONITOR_DEFAULTTOPRIMARY), &monitorInfo)) {
+		logger::warn("Borderless window: could not query the monitor (error {}), leaving the window as created", GetLastError());
+		return;
+	}
+	const RECT& monitor = monitorInfo.rcMonitor;
+	SetWindowLongPtrW(borderlessWindow, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+	// A smaller game resolution is stretched to the window by the flip-model swap chain.
+	if (!SetWindowPos(borderlessWindow, HWND_TOP, monitor.left, monitor.top, monitor.right - monitor.left, monitor.bottom - monitor.top, SWP_FRAMECHANGED | SWP_SHOWWINDOW))
+		logger::warn("Borderless window: SetWindowPos failed (error {})", GetLastError());
+	else
+		logger::info("Borderless window covers the monitor at {}x{}", monitor.right - monitor.left, monitor.bottom - monitor.top);
+}
+
 decltype(&D3D11CreateDeviceAndSwapChain) ptrD3D11CreateDeviceAndSwapChain;
 
 HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChain(
@@ -543,6 +596,7 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChain(
 	const D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_1;
 
 	DXGI_SWAP_CHAIN_DESC modifiedDesc = *pSwapChainDesc;
+	Hooks::ReplaceExclusiveFullscreen(modifiedDesc);
 
 	if (globals::features::hdrDisplay.loaded) {
 		modifiedDesc.BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
@@ -567,6 +621,9 @@ HRESULT WINAPI hk_D3D11CreateDeviceAndSwapChain(
 		ppDevice,
 		pFeatureLevel,
 		ppImmediateContext);
+
+	if (SUCCEEDED(ret))
+		Hooks::ApplyBorderlessWindow();
 
 	return ret;
 }
@@ -714,6 +771,7 @@ namespace Hooks
 			globals::ReInit();
 
 			logger::info("Detouring virtual function tables");
+			stl::detour_vfunc<10, IDXGISwapChain_SetFullscreenState>(globals::d3d::swapChain);
 			stl::detour_vfunc<13, IDXGISwapChain_ResizeBuffers>(globals::d3d::swapChain);
 			// InstallSwapChainPresentHooks installs SwapChainPresentBottom (suppression) and OMSetBlendState first.
 			// IDXGISwapChain_Present is installed last so it sits above SwapChainPresentBottom and fires first of the two.

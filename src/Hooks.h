@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dxgi.h>
+
 namespace Hooks
 {
 
@@ -29,4 +31,22 @@ namespace Hooks
 
 	/** @brief Installs early IAT hooks for D3D11 device/swapchain creation and DXGI factory, before the game initializes Direct3D. */
 	void InstallEarlyHooks();
+
+	/**
+	 * @brief Imnot Shaders: rewrites an exclusive-fullscreen swap chain request into a windowed one.
+	 *
+	 * Skyrim enters exclusive fullscreen through SetFullscreenState on its render thread, not the
+	 * thread that owns the window. That transition can stall for seconds even in vanilla, and with
+	 * Community Shaders loaded it intermittently never completes, leaving a frozen topmost window.
+	 * A borderless window over the monitor avoids the transition entirely; with the flip model the
+	 * swap chain already uses, Windows gives it independent flip, so frame pacing and latency match
+	 * exclusive fullscreen. Call before the swap chain is created; pair with ApplyBorderlessWindow.
+	 *
+	 * @param a_desc Swap chain description the game passed in, modified in place.
+	 * @return True when the request was exclusive fullscreen and has been rewritten.
+	 */
+	bool ReplaceExclusiveFullscreen(DXGI_SWAP_CHAIN_DESC& a_desc);
+
+	/** @brief Makes the game window borderless over its monitor; a no-op unless ReplaceExclusiveFullscreen rewrote the request. */
+	void ApplyBorderlessWindow();
 }
