@@ -13,3 +13,6 @@ shadertoolsconfig.json
 .claude/settings.local.json
 
 **/__pycache__/
+
+# Local shader cache from the lite builds; not shipped by Imnot Shaders and not recoverable from git
+precompiled-cache/
