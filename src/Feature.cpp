@@ -26,6 +26,7 @@
 #include "Features/RainRefraction.h"
 #include "Features/VanillaEnhancer.h"
 #include "Features/TrueSSR.h"
+#include "Features/TrueSnow.h"
 #include "Features/RemoteControl.h"
 #include "Features/RenderDoc.h"
 #include "Features/ScreenSpaceGI.h"
@@ -284,7 +285,8 @@ const std::vector<Feature*>& Feature::GetFeatureList()
 		&globals::features::skin,
 		&globals::features::postProcessing,
 		&globals::features::vanillaEnhancer,
-		&globals::features::trueSSR
+		&globals::features::trueSSR,
+		&globals::features::trueSnow
 	};
 
 	return features;

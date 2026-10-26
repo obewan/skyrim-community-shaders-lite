@@ -179,6 +179,7 @@ file_common_defines:
             - EXTENDED_MATERIALS
             - EXTENDED_TRANSLUCENCY
             - VANILLA_ENHANCER
+            - TRUE_SNOW
         VSHADER:
             - TERRAIN_SHADOWS
             - CS_HAIR

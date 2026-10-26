@@ -26,6 +26,7 @@
 #include "Features/RainRefraction.h"
 #include "Features/VanillaEnhancer.h"
 #include "Features/TrueSSR.h"
+#include "Features/TrueSnow.h"
 #include "Features/RemoteControl.h"
 #include "Features/RenderDoc.h"
 #include "Features/ScreenSpaceGI.h"
@@ -79,6 +80,7 @@ namespace globals
 		RainRefraction rainRefraction{};
 		VanillaEnhancer vanillaEnhancer{};
 		TrueSSR trueSSR{};
+		TrueSnow trueSnow{};
 		ScreenSpaceGI screenSpaceGI{};
 		ScreenSpaceShadows screenSpaceShadows{};
 		Skylighting skylighting{};

@@ -13,6 +13,9 @@
 #if defined(VANILLA_ENHANCER) && defined(LIGHTING) && !defined(TRUE_PBR)
 #	include "VanillaEnhancer/VanillaEnhancer.hlsli"
 #endif
+#if defined(TRUE_SNOW) && defined(SNOW) && defined(LIGHTING)
+#	include "TrueSnow/TrueSnow.hlsli"
+#endif
 
 #if defined(TRUE_PBR)
 DirectContext CreateDirectLightingContext(float3 worldNormal, float3 coatWorldNormal, float3 vertexNormal, float3 viewDir, float3 coatViewDir, float3 lightDir, float3 coatLightDir, float3 lightColor, float detailedShadow, float softShadow)
@@ -150,6 +153,16 @@ void EvaluateLighting(DirectContext context, MaterialProperties material, float3
 	specular = VanillaEnhancer::AdjustSpecular(specular, material.Shininess, context.worldNormal, context.viewDir, context.lightDir, context.halfVector);
 #	endif
 	lightingOutput.specular = specular * material.SpecularColor * material.Glossiness * diffuseLightColor * Color::BRDFScale;
+#endif
+
+#if defined(TRUE_SNOW) && defined(SNOW) && defined(LIGHTING)
+	// Each lighting path's own diffuse normalization, so snow scatters equally on vanilla and PBR
+#	if defined(TRUE_PBR)
+	const float snowDiffuseScale = BRDF::Diffuse_Lambert();
+#	else
+	const float snowDiffuseScale = Color::BRDFScale;
+#	endif
+	lightingOutput.diffuse += TrueSnow::Scatter(context.worldNormal, context.viewDir, context.lightDir, context.lightColor, context.softShadow, material.SnowMask) * snowDiffuseScale;
 #endif
 }
 

@@ -1644,6 +1644,11 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 	normal.xyz = GetWorldMapNormal(input, normal.xyz, sampledBaseColor.xyz);
 #	endif  // WORLD_MAP
 
+#	if defined(TRUE_SNOW) && defined(LANDSCAPE) && defined(SNOW) && !defined(TRUE_PBR)
+	// Snow accumulated over all six landscape layers, before vanilla narrows it to the first one
+	const float trueSnowLandMask = landSnowMask;
+#	endif
+
 #	if defined(LANDSCAPE)
 #		if defined(SNOW) && !defined(TRUE_PBR)
 	landSnowMask = LandscapeTexture1to4IsSnow.x * input.LandBlendWeights1.x;
@@ -1955,7 +1960,28 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 	}
 #	endif
 
+#	if defined(TRUE_SNOW) && defined(SNOW)
+	// The fraction of this pixel the game draws as snow, from each of its snow sources
+	float trueSnowMask = 0;
+#		if defined(LANDSCAPE)
+#			if !defined(TRUE_PBR)
+	// PBR landscape reuses the snow-layer constants for glint parameters, so it has no snow mask
+	trueSnowMask = trueSnowLandMask;
+#			endif
+#		elif defined(PROJECTED_UV)
+	if (useSnowDecalSpecular)
+		trueSnowMask = projectedMaterialWeight;
+#		endif
+	if (Permutation::PixelShaderDescriptor & Permutation::LightingFlags::BaseObjectIsSnow)
+		trueSnowMask = 1;
+	trueSnowMask = TrueSnow::IsOn() ? saturate(trueSnowMask) : 0;
+	baseColor.xyz = TrueSnow::AdjustAlbedo(baseColor.xyz, trueSnowMask);
+#	endif
+
 	MaterialProperties material = (MaterialProperties)0;
+#	if defined(TRUE_SNOW) && defined(SNOW)
+	material.SnowMask = trueSnowMask;
+#	endif
 
 	material.F0 = 0;
 	material.Roughness = 1;
@@ -2983,6 +3009,16 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 #	if defined(SNOW)
 	if (useSnowSpecular)
 		specularColor = 0;
+#	endif
+
+#	if defined(TRUE_SNOW) && defined(SNOW)
+	// After vanilla moves snow specular to its post-process: crystal glints and the melt-layer
+	// sheen are lit by the sun or moon only
+	{
+		const float3 snowWorldPosition = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust.xyz;
+		specularColor += TrueSnow::Sparkle(snowWorldPosition, worldNormal.xyz, viewDirection, DirLightDirection, dirLightColor, dirDetailedShadow, material.SnowMask);
+		specularColor += TrueSnow::WetSheen(worldNormal.xyz, viewDirection, DirLightDirection, dirLightColor, dirDetailedShadow, material.SnowMask);
+	}
 #	endif
 
 	diffuseColor = reflectionDiffuseColor;

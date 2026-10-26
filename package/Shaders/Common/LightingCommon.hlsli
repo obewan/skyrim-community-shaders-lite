@@ -72,6 +72,9 @@ namespace Glints
 struct MaterialProperties
 {
 	float3 BaseColor;
+#if defined(TRUE_SNOW) && defined(SNOW)
+	float SnowMask;  // fraction of the pixel True Snow shades as snow
+#endif
 #if !defined(TRUE_PBR)
 	float Shininess;
 	float Glossiness;

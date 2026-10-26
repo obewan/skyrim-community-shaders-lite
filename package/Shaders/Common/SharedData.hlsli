@@ -492,6 +492,18 @@ namespace SharedData
 		float2 pad0;
 	};
 
+	struct TrueSnowSettings
+	{
+		uint Enabled;
+		float Brightness;
+		float Subsurface;
+		float SparkleIntensity;
+		float SparkleDensity;
+		float Translucency;
+		float Wetness;
+		float pad0;
+	};
+
 	struct TrueSSRSettings
 	{
 		float ReflectionStrength;
@@ -525,6 +537,7 @@ namespace SharedData
 		RainRefractionSettings rainRefractionSettings;
 		VanillaEnhancerSettings vanillaEnhancerSettings;
 		TrueSSRSettings trueSSRSettings;
+		TrueSnowSettings trueSnowSettings;
 	};
 
 	Texture2D<float4> DepthTexture : register(t17);
