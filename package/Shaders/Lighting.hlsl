@@ -1958,25 +1958,44 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 #	if defined(TRUE_SNOW)
 	// The fraction of this pixel the game draws as snow. Independent of the game's SNOW permutation,
 	// which only exists with bEnableImprovedSnow, off by default.
-	float trueSnowMask = 0;
+	// Each source kept apart so the debug view can colour-code them
+	float trueSnowLand = 0;
+	float trueSnowProjected = 0;
+	float trueSnowSparkle = 0;
+	float trueSnowObject = 0;
 #		if defined(LANDSCAPE)
-#			if !defined(TRUE_PBR)
-	// The landscape texture records' snow flags; PBR landscape reuses these constants for glints
-	trueSnowMask = dot(LandscapeTexture1to4IsSnow, input.LandBlendWeights1) + dot(LandscapeTexture5to6IsSnow.xy, input.LandBlendWeights2.xy);
-#			endif
+	// Each blended layer is classified once from its texture's average colour (smallest mip), then
+	// weighted: every texel of a snow texture gets the same mask, so grains and stones do not
+	// speckle it. The texture records' snow-flag constants (LandscapeTexture*IsSnow) are
+	// deliberately not used: in practice they are sometimes garbage, even NaN, which made snow
+	// flicker dark. Appearance also covers PBR landscape.
+#			define TRUE_SNOW_LAYER(TEX, SAMP, WEIGHT) 				((WEIGHT) > 0.01 ? (WEIGHT) * TrueSnow::LooksLikeSnow(Color::Albedo(ColorManagement::DiffuseToWorking(TEX.SampleLevel(SAMP, uv, 12).xyz, PBRTextures))) : 0.0)
+	trueSnowLand = TRUE_SNOW_LAYER(TexColorSampler, SampColorSampler, input.LandBlendWeights1.x) +
+	               TRUE_SNOW_LAYER(TexLandColor2Sampler, SampLandColor2Sampler, input.LandBlendWeights1.y) +
+	               TRUE_SNOW_LAYER(TexLandColor3Sampler, SampLandColor3Sampler, input.LandBlendWeights1.z) +
+	               TRUE_SNOW_LAYER(TexLandColor4Sampler, SampLandColor4Sampler, input.LandBlendWeights1.w) +
+	               TRUE_SNOW_LAYER(TexLandColor5Sampler, SampLandColor5Sampler, input.LandBlendWeights2.x) +
+	               TRUE_SNOW_LAYER(TexLandColor6Sampler, SampLandColor6Sampler, input.LandBlendWeights2.y);
+#			undef TRUE_SNOW_LAYER
+	trueSnowLand *= TrueSnow::SlopeFactor(normalize(vertexNormal.xyz).z);
 #		elif defined(PROJECTED_UV)
 #			if defined(SPARKLE)
 	// The projected sparkle material is the snow material itself
-	trueSnowMask = 1;
-#			else
-	// Projected materials are mostly snow, but also Solstheim's ash: only bright ones count
-	trueSnowMask = projectedMaterialWeight * smoothstep(0.25, 0.45, dot(baseColor.xyz, float3(0.2126, 0.7152, 0.0722)));
+	trueSnowSparkle = 1;
+#			elif !defined(FACEGEN) && !defined(MULTI_LAYER_PARALLAX) && !defined(PARALLAX)
+	// Textured projection blends by projectedMaterialWeight; the flat-colour mode paints wherever
+	// projWeight > 0. Projected materials are mostly snow, but also Solstheim's ash: only bright count.
+	const float projectedCoverage = ProjectedUVParams3.w > 0.5 ? projectedMaterialWeight : (projWeight > 0 ? 1.0 : 0.0);
+	trueSnowProjected = projectedCoverage * smoothstep(0.25, 0.45, dot(baseColor.xyz, float3(0.2126, 0.7152, 0.0722)));
 #			endif
 #		endif
 	if (Permutation::PixelShaderDescriptor & Permutation::LightingFlags::BaseObjectIsSnow)
-		trueSnowMask = 1;
-	trueSnowMask = TrueSnow::IsOn() ? saturate(trueSnowMask) : 0;
+		trueSnowObject = 1;
+	float trueSnowMask = TrueSnow::IsOn() ? saturate(trueSnowLand + trueSnowProjected + trueSnowSparkle + trueSnowObject) : 0;
 	baseColor.xyz = TrueSnow::AdjustAlbedo(baseColor.xyz, trueSnowMask);
+	// Debug view: landscape red, projected green, sparkle material blue, snow objects yellow
+	if (TrueSnow::IsOn() && SharedData::trueSnowSettings.DebugView && trueSnowMask > 0)
+		baseColor.xyz = saturate(float3(trueSnowLand + trueSnowObject, trueSnowProjected + trueSnowObject, trueSnowSparkle));
 #	endif
 
 	MaterialProperties material = (MaterialProperties)0;
