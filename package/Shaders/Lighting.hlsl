@@ -2494,22 +2494,27 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 
 	float2 uvOriginal_ddx = ddx(uvOriginal);
 	float2 uvOriginal_ddy = ddy(uvOriginal);
+#	if defined(TRUE_PBR) && defined(LOD_LAND_BLEND)
+	lodLandDiffuseColor += dirLightColor / Math::PI * saturate(dirLightAngle) * dirDetailedShadow;
+#	endif
+
+	// With Light Limit Fix the directional light is slot 0 of the light loop below, so the
+	// lighting model is inlined once rather than once per call site: it dominates compile time.
+#	if !defined(LIGHT_LIMIT_FIX) || defined(LOD)
 	EvaluateLighting(dirLightContext, material, tbnTr, uvOriginal, uvOriginal_ddx, uvOriginal_ddy, dirLightOutput);
 	dirLightOutput.transmission *= dirTransmissionContactShadow;
-#	if defined(WETNESS_EFFECTS)
+#		if defined(WETNESS_EFFECTS)
 	if (waterRoughnessSpecular < 1)
 		EvaluateWetnessLighting(wetnessNormal, dirLightContext, waterRoughnessSpecular, dirLightOutput);
-#	endif
+#		endif
 
 	lightsDiffuseColor += dirLightOutput.diffuse;
 	lightsSpecularColor += dirLightOutput.specular;
-#	if defined(TRUE_PBR)
+#		if defined(TRUE_PBR)
 	coatLightsDiffuseColor += dirLightOutput.coatDiffuse;
-#		if defined(LOD_LAND_BLEND)
-	lodLandDiffuseColor += dirLightColor / Math::PI * saturate(dirLightAngle) * dirDetailedShadow;
 #		endif
-#	endif
 	transmissionColor += dirLightOutput.transmission;
+#	endif
 
 #	if !defined(LOD)
 #		if !defined(LIGHT_LIMIT_FIX)
@@ -2591,110 +2596,122 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 	const bool localShadowSkinned = false;
 #			endif
 
-	[loop] for (uint lightIndex = 0; lightIndex < totalLightCount; lightIndex++)
+	[loop] for (uint lightSlot = 0; lightSlot <= totalLightCount; lightSlot++)
 	{
-		LightLimitFix::Light light;
-		if (lightIndex < LightLimitFix::NumStrictLights) {
-			light = LightLimitFix::StrictLights[lightIndex];
-		} else {
-			uint clusteredLightIndex = LightLimitFix::lightList[lightOffset + (lightIndex - LightLimitFix::NumStrictLights)];
-			light = LightLimitFix::lights[clusteredLightIndex];
+		DirectContext lightContext;
+		float transmissionScale = 1.0;
+		[branch] if (lightSlot == 0)
+		{
+			lightContext = dirLightContext;
+			transmissionScale = dirTransmissionContactShadow;
+		}
+		else
+		{
+			const uint lightIndex = lightSlot - 1;
+			LightLimitFix::Light light;
+			if (lightIndex < LightLimitFix::NumStrictLights) {
+				light = LightLimitFix::StrictLights[lightIndex];
+			} else {
+				uint clusteredLightIndex = LightLimitFix::lightList[lightOffset + (lightIndex - LightLimitFix::NumStrictLights)];
+				light = LightLimitFix::lights[clusteredLightIndex];
 
-			if (LightLimitFix::IsLightIgnored(light))
+				if (LightLimitFix::IsLightIgnored(light))
+					continue;
+			}
+
+			float3 lightDirection = light.positionWS.xyz - input.WorldPosition.xyz;
+			float lightDist = length(lightDirection);
+
+			float intensityMultiplier = LightLimitFix::GetAttenuation(lightDist, light);
+			if (intensityMultiplier < 1e-5)
 				continue;
-		}
 
-		float3 lightDirection = light.positionWS.xyz - input.WorldPosition.xyz;
-		float lightDist = length(lightDirection);
+			float3 lightColor = Color::PointLight(light.color.xyz) * intensityMultiplier * light.fade;
+			float lightShadow = 1.0;
+			float3 normalizedLightDirection = normalize(lightDirection);
 
-		float intensityMultiplier = LightLimitFix::GetAttenuation(lightDist, light);
-		if (intensityMultiplier < 1e-5)
-			continue;
-
-		float3 lightColor = Color::PointLight(light.color.xyz) * intensityMultiplier * light.fade;
-		float lightShadow = 1.0;
-		float3 normalizedLightDirection = normalize(lightDirection);
-
-		float shadowComponent = 1.0;
-		[branch] if (light.lightFlags & LightLimitFix::LightFlags::LocalShadow)
-		{
-			const float3 localShadowEye = LightLimitFix::FirstPerson ? LightLimitFix::WorldEyePosition.xyz : FrameBuffer::CameraPosAdjust.xyz;
-			shadowComponent = LightLimitFix::GetLocalShadow(LinearSampler, light.localShadowIndex, input.WorldPosition.xyz, localShadowEye, normalizedLightDirection, localShadowSkinned, screenNoise);
-			lightShadow *= shadowComponent;
-		}
-		else if (Permutation::PixelShaderDescriptor & Permutation::LightingFlags::DefShadow)
-		{
-			if (light.lightFlags & LightLimitFix::LightFlags::Shadow) {
-				shadowComponent = shadowColor[light.shadowLightIndex];
+			float shadowComponent = 1.0;
+			[branch] if (light.lightFlags & LightLimitFix::LightFlags::LocalShadow)
+			{
+				const float3 localShadowEye = LightLimitFix::FirstPerson ? LightLimitFix::WorldEyePosition.xyz : FrameBuffer::CameraPosAdjust.xyz;
+				shadowComponent = LightLimitFix::GetLocalShadow(LinearSampler, light.localShadowIndex, input.WorldPosition.xyz, localShadowEye, normalizedLightDirection, localShadowSkinned, screenNoise);
 				lightShadow *= shadowComponent;
 			}
-		}
+			else if (Permutation::PixelShaderDescriptor & Permutation::LightingFlags::DefShadow)
+			{
+				if (light.lightFlags & LightLimitFix::LightFlags::Shadow) {
+					shadowComponent = shadowColor[light.shadowLightIndex];
+					lightShadow *= shadowComponent;
+				}
+			}
 
-		float lightAngle = dot(worldNormal.xyz, normalizedLightDirection.xyz);
+			float lightAngle = dot(worldNormal.xyz, normalizedLightDirection.xyz);
 
-		float3 refractedLightDirection = normalizedLightDirection;
+			float3 refractedLightDirection = normalizedLightDirection;
 #			if defined(TRUE_PBR) && !defined(LANDSCAPE) && !defined(LODLANDSCAPE)
-		[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
-		{
-			if (dot(normalizedLightDirection, coatWorldNormal) > 0)
-				refractedLightDirection = -refract(-normalizedLightDirection, coatWorldNormal, eta);
-		}
+			[branch] if ((PBRFlags & PBR::Flags::InterlayerParallax) != 0)
+			{
+				if (dot(normalizedLightDirection, coatWorldNormal) > 0)
+					refractedLightDirection = -refract(-normalizedLightDirection, coatWorldNormal, eta);
+			}
 #			endif
 
-		float parallaxShadow = 1;
+			float parallaxShadow = 1;
 
 #			if defined(EMAT) && (defined(SKINNED) || !defined(MODELSPACENORMALS))
-		[branch] if (
-			SharedData::extendedMaterialSettings.EnableShadows &&
-			!(light.lightFlags & LightLimitFix::LightFlags::Simple) &&
-			lightAngle > 0.0 &&
-			shadowComponent != 0.0)
-		{
-			float3 lightDirectionTS = normalize(mul(refractedLightDirection, tbn).xyz);
+			[branch] if (
+				SharedData::extendedMaterialSettings.EnableShadows &&
+				!(light.lightFlags & LightLimitFix::LightFlags::Simple) &&
+				lightAngle > 0.0 &&
+				shadowComponent != 0.0)
+			{
+				float3 lightDirectionTS = normalize(mul(refractedLightDirection, tbn).xyz);
 #				if defined(PARALLAX)
-			[branch] if (SharedData::extendedMaterialSettings.EnableParallax)
-				parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, lightDirectionTS, sh0, TexParallaxSampler, SampParallaxSampler, 0, parallaxShadowQuality, screenNoise, displacementParams, applyMeshTV, meshOffset);
+				[branch] if (SharedData::extendedMaterialSettings.EnableParallax)
+					parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, lightDirectionTS, sh0, TexParallaxSampler, SampParallaxSampler, 0, parallaxShadowQuality, screenNoise, displacementParams, applyMeshTV, meshOffset);
 #				elif defined(LANDSCAPE)
-			[branch] if (hasTerrainParallaxShadow)
-				parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplierTerrain(input, uv, terrainShadowMipLevels, lightDirectionTS, sh0, terrainDirectionalShadowQuality, screenNoise, displacementParams, sharedOffset);
+				[branch] if (hasTerrainParallaxShadow)
+					parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplierTerrain(input, uv, terrainShadowMipLevels, lightDirectionTS, sh0, terrainDirectionalShadowQuality, screenNoise, displacementParams, sharedOffset);
 #				elif defined(EMAT_ENVMAP)
-			[branch] if (complexMaterialParallax)
-				parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, lightDirectionTS, sh0, TexEnvMaskSampler, SampEnvMaskSampler, 3, parallaxShadowQuality, screenNoise, displacementParams, applyMeshTV, meshOffset);
+				[branch] if (complexMaterialParallax)
+					parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, lightDirectionTS, sh0, TexEnvMaskSampler, SampEnvMaskSampler, 3, parallaxShadowQuality, screenNoise, displacementParams, applyMeshTV, meshOffset);
 #				elif defined(TRUE_PBR) && !defined(LODLANDSCAPE) && !defined(FACEGEN)
-			[branch] if (PBRParallax)
-				parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, lightDirectionTS, sh0, TexParallaxSampler, SampParallaxSampler, 0, parallaxShadowQuality, screenNoise, displacementParams, applyMeshTV, meshOffset);
+				[branch] if (PBRParallax)
+					parallaxShadow = ExtendedMaterials::GetParallaxSoftShadowMultiplier(uv, mipLevel, lightDirectionTS, sh0, TexParallaxSampler, SampParallaxSampler, 0, parallaxShadowQuality, screenNoise, displacementParams, applyMeshTV, meshOffset);
 #				endif
-		}
+			}
 #			endif  // defined(EMAT) && (defined(SKINNED) || !defined(MODELSPACENORMALS))
 
-		DirectContext pointLightContext;
-		DirectLightingOutput pointLightOutput;
-		float pointLightShadow = lightShadow * parallaxShadow;
+			float pointLightShadow = lightShadow * parallaxShadow;
 #			if defined(TRUE_PBR)
-		pointLightContext = CreateDirectLightingContext(worldNormal.xyz, coatWorldNormal, vertexNormal.xyz, refractedViewDirection, viewDirection, refractedLightDirection, normalizedLightDirection, lightColor, pointLightShadow, pointLightShadow);
-		if (thinSurfaceNormals)
-			pointLightContext.backTransmissionVisibility = PBR::GetThinSurfaceBackTransmissionVisibility(thinSurfaceFaceNormal, normalizedLightDirection);
+			lightContext = CreateDirectLightingContext(worldNormal.xyz, coatWorldNormal, vertexNormal.xyz, refractedViewDirection, viewDirection, refractedLightDirection, normalizedLightDirection, lightColor, pointLightShadow, pointLightShadow);
+			if (thinSurfaceNormals)
+				lightContext.backTransmissionVisibility = PBR::GetThinSurfaceBackTransmissionVisibility(thinSurfaceFaceNormal, normalizedLightDirection);
 #			else
-		pointLightContext = CreateDirectLightingContext(worldNormal.xyz, vertexNormal.xyz, viewDirection, normalizedLightDirection, lightColor, pointLightShadow, pointLightShadow);
+			lightContext = CreateDirectLightingContext(worldNormal.xyz, vertexNormal.xyz, viewDirection, normalizedLightDirection, lightColor, pointLightShadow, pointLightShadow);
 #				if defined(CS_HAIR_SHADING)
-		if (SharedData::hairSpecularSettings.Enabled) {
-			float hairShadow = Hair::HairSelfShadow(input.WorldPosition.xyz, normalizedLightDirection, screenNoise);
-			pointLightContext.hairShadow = hairShadow;
-		}
+			if (SharedData::hairSpecularSettings.Enabled) {
+				float hairShadow = Hair::HairSelfShadow(input.WorldPosition.xyz, normalizedLightDirection, screenNoise);
+				lightContext.hairShadow = hairShadow;
+			}
 #				endif
 #			endif
-		EvaluateLighting(pointLightContext, material, tbnTr, uvOriginal, uvOriginal_ddx, uvOriginal_ddy, pointLightOutput);
+		}
+
+		DirectLightingOutput lightOutput;
+		EvaluateLighting(lightContext, material, tbnTr, uvOriginal, uvOriginal_ddx, uvOriginal_ddy, lightOutput);
+		lightOutput.transmission *= transmissionScale;
 #			if defined(WETNESS_EFFECTS)
 		if (waterRoughnessSpecular < 1)
-			EvaluateWetnessLighting(wetnessNormal, pointLightContext, waterRoughnessSpecular, pointLightOutput);
+			EvaluateWetnessLighting(wetnessNormal, lightContext, waterRoughnessSpecular, lightOutput);
 #			endif
 
-		lightsDiffuseColor += pointLightOutput.diffuse;
-		lightsSpecularColor += pointLightOutput.specular;
+		lightsDiffuseColor += lightOutput.diffuse;
+		lightsSpecularColor += lightOutput.specular;
 #			if defined(TRUE_PBR)
-		coatLightsDiffuseColor += pointLightOutput.coatDiffuse;
+		coatLightsDiffuseColor += lightOutput.coatDiffuse;
 #			endif
-		transmissionColor += pointLightOutput.transmission;
+		transmissionColor += lightOutput.transmission;
 	}
 #		endif
 #	endif
