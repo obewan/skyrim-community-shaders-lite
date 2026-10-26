@@ -1644,11 +1644,6 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 	normal.xyz = GetWorldMapNormal(input, normal.xyz, sampledBaseColor.xyz);
 #	endif  // WORLD_MAP
 
-#	if defined(TRUE_SNOW) && defined(LANDSCAPE) && defined(SNOW) && !defined(TRUE_PBR)
-	// Snow accumulated over all six landscape layers, before vanilla narrows it to the first one
-	const float trueSnowLandMask = landSnowMask;
-#	endif
-
 #	if defined(LANDSCAPE)
 #		if defined(SNOW) && !defined(TRUE_PBR)
 	landSnowMask = LandscapeTexture1to4IsSnow.x * input.LandBlendWeights1.x;
@@ -1960,17 +1955,23 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 	}
 #	endif
 
-#	if defined(TRUE_SNOW) && defined(SNOW)
-	// The fraction of this pixel the game draws as snow, from each of its snow sources
+#	if defined(TRUE_SNOW)
+	// The fraction of this pixel the game draws as snow. Independent of the game's SNOW permutation,
+	// which only exists with bEnableImprovedSnow, off by default.
 	float trueSnowMask = 0;
 #		if defined(LANDSCAPE)
 #			if !defined(TRUE_PBR)
-	// PBR landscape reuses the snow-layer constants for glint parameters, so it has no snow mask
-	trueSnowMask = trueSnowLandMask;
+	// The landscape texture records' snow flags; PBR landscape reuses these constants for glints
+	trueSnowMask = dot(LandscapeTexture1to4IsSnow, input.LandBlendWeights1) + dot(LandscapeTexture5to6IsSnow.xy, input.LandBlendWeights2.xy);
 #			endif
 #		elif defined(PROJECTED_UV)
-	if (useSnowDecalSpecular)
-		trueSnowMask = projectedMaterialWeight;
+#			if defined(SPARKLE)
+	// The projected sparkle material is the snow material itself
+	trueSnowMask = 1;
+#			else
+	// Projected materials are mostly snow, but also Solstheim's ash: only bright ones count
+	trueSnowMask = projectedMaterialWeight * smoothstep(0.25, 0.45, dot(baseColor.xyz, float3(0.2126, 0.7152, 0.0722)));
+#			endif
 #		endif
 	if (Permutation::PixelShaderDescriptor & Permutation::LightingFlags::BaseObjectIsSnow)
 		trueSnowMask = 1;
@@ -1979,7 +1980,7 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 #	endif
 
 	MaterialProperties material = (MaterialProperties)0;
-#	if defined(TRUE_SNOW) && defined(SNOW)
+#	if defined(TRUE_SNOW)
 	material.SnowMask = trueSnowMask;
 #	endif
 
@@ -3011,9 +3012,9 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 		specularColor = 0;
 #	endif
 
-#	if defined(TRUE_SNOW) && defined(SNOW)
-	// After vanilla moves snow specular to its post-process: crystal glints and the melt-layer
-	// sheen are lit by the sun or moon only
+#	if defined(TRUE_SNOW)
+	// After vanilla moves snow specular to its post-process (with improved snow): crystal glints
+	// and the melt-layer sheen are lit by the sun or moon only
 	{
 		const float3 snowWorldPosition = input.WorldPosition.xyz + FrameBuffer::CameraPosAdjust.xyz;
 		specularColor += TrueSnow::Sparkle(snowWorldPosition, worldNormal.xyz, viewDirection, DirLightDirection, dirLightColor, dirDetailedShadow, material.SnowMask);

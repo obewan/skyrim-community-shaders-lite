@@ -13,7 +13,7 @@
 #if defined(VANILLA_ENHANCER) && defined(LIGHTING) && !defined(TRUE_PBR)
 #	include "VanillaEnhancer/VanillaEnhancer.hlsli"
 #endif
-#if defined(TRUE_SNOW) && defined(SNOW) && defined(LIGHTING)
+#if defined(TRUE_SNOW) && defined(LIGHTING)
 #	include "TrueSnow/TrueSnow.hlsli"
 #endif
 
@@ -155,7 +155,7 @@ void EvaluateLighting(DirectContext context, MaterialProperties material, float3
 	lightingOutput.specular = specular * material.SpecularColor * material.Glossiness * diffuseLightColor * Color::BRDFScale;
 #endif
 
-#if defined(TRUE_SNOW) && defined(SNOW) && defined(LIGHTING)
+#if defined(TRUE_SNOW) && defined(LIGHTING)
 	// Each lighting path's own diffuse normalization, so snow scatters equally on vanilla and PBR
 #	if defined(TRUE_PBR)
 	const float snowDiffuseScale = BRDF::Diffuse_Lambert();
