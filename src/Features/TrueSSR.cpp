@@ -15,7 +15,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Thickness,
 	RoughnessCutoff,
 	Intensity,
-	EdgeFade)
+	EdgeFade,
+	ReflectionStrength,
+	DebugView)
 
 namespace
 {
@@ -70,9 +72,19 @@ void TrueSSR::DrawSettings()
 		ImGui::Text("%s", T(TKEY("intensity_tooltip"), "How much screen-space reflections replace the cubemap where they are found."));
 	}
 
+	ImGui::SliderFloat(T(TKEY("reflection_strength"), "Reflection Strength"), &settings.ReflectionStrength, 1.0f, 3.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	if (auto _tt = Util::HoverTooltipWrapper()) {
+		ImGui::Text("%s", T(TKEY("reflection_strength_tooltip"), "Multiplies screen-space reflections only. 1 is physically based; higher values make them more visible."));
+	}
+
 	ImGui::SliderFloat(T(TKEY("edge_fade"), "Edge Fade"), &settings.EdgeFade, 0.01f, 0.5f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
 		ImGui::Text("%s", T(TKEY("edge_fade_tooltip"), "Fraction of the screen over which reflections fade out near its borders."));
+	}
+
+	ImGui::Checkbox(T(TKEY("debug_view"), "Debug View"), &settings.DebugView);
+	if (auto _tt = Util::HoverTooltipWrapper()) {
+		ImGui::Text("%s", T(TKEY("debug_view_tooltip"), "Shows only what screen-space reflections contribute, weighted by their confidence. Black means no hit."));
 	}
 }
 
@@ -88,6 +100,7 @@ void TrueSSR::LoadSettings(json& o_json)
 	settings.RoughnessCutoff = std::clamp(settings.RoughnessCutoff, 0.1f, 1.0f);
 	settings.Intensity = std::clamp(settings.Intensity, 0.0f, 1.0f);
 	settings.EdgeFade = std::clamp(settings.EdgeFade, 0.01f, 0.5f);
+	settings.ReflectionStrength = std::clamp(settings.ReflectionStrength, 1.0f, 3.0f);
 }
 
 void TrueSSR::SaveSettings(json& o_json)

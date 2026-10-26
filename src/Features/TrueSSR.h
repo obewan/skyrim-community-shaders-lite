@@ -40,7 +40,21 @@ public:
 		float RoughnessCutoff = 0.6f;
 		float Intensity = 1.0f;
 		float EdgeFade = 0.1f;
+		float ReflectionStrength = 1.0f;
+		bool DebugView = false;
 	} settings;
+
+	/** @brief Feature buffer data for DeferredCompositeCS, matching TrueSSRSettings in SharedData.hlsli. */
+	struct alignas(16) PerFrame
+	{
+		float ReflectionStrength;
+		uint DebugView;
+		float pad0[2];
+	};
+	STATIC_ASSERT_ALIGNAS_16(PerFrame);
+
+	/** @brief Composite-side settings for the feature buffer. */
+	PerFrame GetCommonBufferData() const { return { .ReflectionStrength = settings.ReflectionStrength, .DebugView = settings.DebugView ? 1u : 0u }; }
 
 	/** @brief Constant buffer for TrueSSR.cs.hlsl, matching TrueSSRCB. */
 	struct alignas(16) TrueSSRCB

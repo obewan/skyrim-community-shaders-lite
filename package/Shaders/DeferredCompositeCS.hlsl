@@ -194,6 +194,9 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, inout float ao, out float3 il,
 
 #if defined(DYNAMIC_CUBEMAPS)
 
+#	if defined(TRUE_SSR)
+	float3 trueSSRDebug = 0;
+#	endif
 	float3 reflectance = ReflectanceTexture[dispatchID.xy];
 
 	if (any(reflectance > 0.0)) {
@@ -301,11 +304,20 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, inout float ao, out float3 il,
 		// Screen-space hits replace the environment lookup where they are confident; the output
 		// covers the same buffer layout at full or half size, so buffer UVs address it directly.
 		const float4 trueSSR = TrueSSRTexture.SampleLevel(LinearSampler, (dispatchID.xy + 0.5) * SharedData::BufferDim.zw, 0);
-		finalIrradiance = lerp(finalIrradiance, trueSSR.rgb, saturate(trueSSR.a));
+		const float3 ssrIrradiance = trueSSR.rgb * SharedData::trueSSRSettings.ReflectionStrength;
+		finalIrradiance = lerp(finalIrradiance, ssrIrradiance, saturate(trueSSR.a));
+		if (SharedData::trueSSRSettings.DebugView)
+			trueSSRDebug = reflectance * ssrIrradiance * saturate(trueSSR.a);
 #	endif
 
 		color += reflectance * finalIrradiance;
 	}
+
+#	if defined(TRUE_SSR)
+	// Reflection contribution alone, brightened so the faint dielectric reflections are readable
+	if (SharedData::trueSSRSettings.DebugView)
+		color = trueSSRDebug * 8.0;
+#	endif
 
 #endif
 

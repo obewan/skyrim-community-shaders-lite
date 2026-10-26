@@ -492,6 +492,13 @@ namespace SharedData
 		float2 pad0;
 	};
 
+	struct TrueSSRSettings
+	{
+		float ReflectionStrength;
+		uint DebugView;
+		float2 pad0;
+	};
+
 	cbuffer FeatureData : register(b6)
 	{
 		GrassLightingSettings grassLightingSettings;
@@ -516,6 +523,7 @@ namespace SharedData
 		HorizonFixSettings horizonFixSettings;
 		RainRefractionSettings rainRefractionSettings;
 		VanillaEnhancerSettings vanillaEnhancerSettings;
+		TrueSSRSettings trueSSRSettings;
 	};
 
 	Texture2D<float4> DepthTexture : register(t17);
