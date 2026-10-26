@@ -48,6 +48,9 @@ namespace TrueSnow
 		const float luma = dot(albedo, float3(0.2126, 0.7152, 0.0722));
 		const float3 neutral = lerp(luma.xxx, albedo, Saturation);
 		const float3 snow = min(neutral * SharedData::trueSnowSettings.Brightness * float3(0.96, 0.98, 1.0), MaxAlbedo);
+		// Debug view: detected snow is painted red, in proportion to the mask
+		if (SharedData::trueSnowSettings.DebugView)
+			return lerp(albedo, float3(1, 0, 0), snowMask);
 		return lerp(albedo, snow, snowMask);
 	}
 

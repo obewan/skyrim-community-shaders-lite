@@ -41,7 +41,7 @@ public:
 		float SparkleDensity = 0.5f;
 		float Translucency = 0.5f;
 		float Wetness = 0.2f;
-		float pad0 = 0.0f;
+		uint DebugView = false;
 	} settings;
 	STATIC_ASSERT_ALIGNAS_16(Settings);
 

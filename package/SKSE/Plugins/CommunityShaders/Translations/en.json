@@ -2866,6 +2866,8 @@
     "feature.true_pbr.vertex_ao_strength": "Vertex AO Strength",
     "feature.true_snow.brightness": "Brightness",
     "feature.true_snow.brightness_tooltip": "Lifts grey snow textures toward fresh-snow reflectance, keeping their detail. Capped below pure white.",
+    "feature.true_snow.debug_view": "Debug View",
+    "feature.true_snow.debug_view_tooltip": "Paints the snow True Snow detects in red. Anything snowy that stays its normal colour is not reached.",
     "feature.true_snow.description": "Realistic snow on vanilla and PBR materials: brighter, softly scattering, translucent at its edges and sparkling in the sun.",
     "feature.true_snow.enabled": "Enabled",
     "feature.true_snow.enabled_tooltip": "Applies to landscape snow, projected snow on rocks and roofs, and snow objects.",

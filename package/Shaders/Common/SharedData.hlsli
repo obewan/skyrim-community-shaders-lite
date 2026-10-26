@@ -501,7 +501,7 @@ namespace SharedData
 		float SparkleDensity;
 		float Translucency;
 		float Wetness;
-		float pad0;
+		uint DebugView;
 	};
 
 	struct TrueSSRSettings

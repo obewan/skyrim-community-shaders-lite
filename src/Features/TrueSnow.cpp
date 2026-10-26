@@ -11,7 +11,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	SparkleIntensity,
 	SparkleDensity,
 	Translucency,
-	Wetness)
+	Wetness,
+	DebugView)
 
 #define I18N_KEY_PREFIX "feature.true_snow."
 
@@ -52,6 +53,11 @@ void TrueSnow::DrawSettings()
 	ImGui::SliderFloat(T(TKEY("sparkle_density"), "Sparkle Density"), &settings.SparkleDensity, 0.1f, 2.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
 		ImGui::Text("%s", T(TKEY("sparkle_density_tooltip"), "How fine the crystals are. Higher values give smaller, more numerous sparkles."));
+	}
+
+	ImGui::Checkbox(T(TKEY("debug_view"), "Debug View"), (bool*)&settings.DebugView);
+	if (auto _tt = Util::HoverTooltipWrapper()) {
+		ImGui::Text("%s", T(TKEY("debug_view_tooltip"), "Paints the snow True Snow detects in red. Anything snowy that stays its normal colour is not reached."));
 	}
 }
 
