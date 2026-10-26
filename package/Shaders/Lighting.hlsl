@@ -2882,6 +2882,21 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 
 	GetIndirectLobeWeights(indirectLobeWeights, indirectContext, material, uvOriginal);
 
+#	if defined(VANILLA_ENHANCER) && !defined(TRUE_PBR)
+	{
+		// Hair shading replaces both normals with its tangent frame, which carries no occlusion
+		bool hairShading = false;
+#		if defined(CS_HAIR_SHADING)
+		hairShading = SharedData::hairSpecularSettings.Enabled;
+#		endif
+		if (!hairShading) {
+			const float normalMapOcclusion = VanillaEnhancer::NormalMapOcclusion(ambientNormal, vertexNormal.xyz);
+			indirectLobeWeights.diffuse *= normalMapOcclusion;
+			indirectLobeWeights.specular *= normalMapOcclusion;
+		}
+	}
+#	endif
+
 #	if defined(WETNESS_EFFECTS)
 #		if defined(DYNAMIC_CUBEMAPS)
 	float3 wetnessReflectance = GetWetnessIndirectLobeWeights(indirectLobeWeights, wetnessNormal, waterRoughnessSpecular, indirectContext);

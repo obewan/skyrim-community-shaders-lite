@@ -481,6 +481,16 @@ namespace SharedData
 		float pad0;
 	};
 
+	struct VanillaEnhancerSettings
+	{
+		uint Enabled;
+		float SpecularEnergy;
+		float Fresnel;
+		uint HorizonFix;
+		float NormalOcclusion;
+		float3 pad0;
+	};
+
 	cbuffer FeatureData : register(b6)
 	{
 		GrassLightingSettings grassLightingSettings;
@@ -504,6 +514,7 @@ namespace SharedData
 		SkinData skinData;
 		HorizonFixSettings horizonFixSettings;
 		RainRefractionSettings rainRefractionSettings;
+		VanillaEnhancerSettings vanillaEnhancerSettings;
 	};
 
 	Texture2D<float4> DepthTexture : register(t17);

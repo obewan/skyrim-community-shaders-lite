@@ -178,6 +178,7 @@ file_common_defines:
             - SSGI
             - EXTENDED_MATERIALS
             - EXTENDED_TRANSLUCENCY
+            - VANILLA_ENHANCER
         VSHADER:
             - TERRAIN_SHADOWS
             - CS_HAIR

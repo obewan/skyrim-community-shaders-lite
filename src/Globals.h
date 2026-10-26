@@ -17,6 +17,7 @@ struct LinearLighting;
 struct LODBlending;
 struct InteriorSun;
 struct RainRefraction;
+struct VanillaEnhancer;
 struct ScreenSpaceGI;
 struct ScreenSpaceShadows;
 struct Skylighting;
@@ -108,6 +109,7 @@ namespace globals
 		extern LODBlending lodBlending;
 		extern InteriorSun interiorSun;
 		extern RainRefraction rainRefraction;
+		extern VanillaEnhancer vanillaEnhancer;
 		extern ScreenSpaceGI screenSpaceGI;
 		extern ScreenSpaceShadows screenSpaceShadows;
 		extern Skylighting skylighting;

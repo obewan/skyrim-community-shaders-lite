@@ -21,6 +21,7 @@
 #include "Features/TerrainBlending.h"
 #include "Features/TerrainShadows.h"
 #include "Features/TerrainVariation.h"
+#include "Features/VanillaEnhancer.h"
 #include "Features/WetnessEffects.h"
 #include "TruePBR.h"
 
@@ -66,5 +67,6 @@ std::pair<unsigned char*, size_t> GetFeatureBufferData(bool a_inWorld)
 		globals::features::truePBR.settings,
 		globals::features::skin.GetCommonBufferData(),
 		globals::features::horizonFix.GetCommonBufferData(),
-		globals::features::rainRefraction.GetCommonBufferData());
+		globals::features::rainRefraction.GetCommonBufferData(),
+		globals::features::vanillaEnhancer.settings);
 }

@@ -10,6 +10,9 @@
 #elif defined(GRASS_LIGHTING)
 #	include "Common/PBRMath.hlsli"
 #endif
+#if defined(VANILLA_ENHANCER) && defined(LIGHTING) && !defined(TRUE_PBR)
+#	include "VanillaEnhancer/VanillaEnhancer.hlsli"
+#endif
 
 #if defined(TRUE_PBR)
 DirectContext CreateDirectLightingContext(float3 worldNormal, float3 coatWorldNormal, float3 vertexNormal, float3 viewDir, float3 coatViewDir, float3 lightDir, float3 coatLightDir, float3 lightColor, float detailedShadow, float softShadow)
@@ -142,7 +145,11 @@ void EvaluateLighting(DirectContext context, MaterialProperties material, float3
 
 	if (HasBackLighting())
 		lightingOutput.diffuse += softLightColor * saturate(-NdotL) * material.backLightColor * Color::BRDFScale;
-	lightingOutput.specular = VanillaSpecular(context, material.Shininess, HasSpecular(), uv, uv_ddx, uv_ddy) * material.SpecularColor * material.Glossiness * diffuseLightColor * Color::BRDFScale;
+	float3 specular = VanillaSpecular(context, material.Shininess, HasSpecular(), uv, uv_ddx, uv_ddy);
+#	if defined(VANILLA_ENHANCER)
+	specular = VanillaEnhancer::AdjustSpecular(specular, material.Shininess, context.worldNormal, context.viewDir, context.lightDir, context.halfVector);
+#	endif
+	lightingOutput.specular = specular * material.SpecularColor * material.Glossiness * diffuseLightColor * Color::BRDFScale;
 #endif
 }
 

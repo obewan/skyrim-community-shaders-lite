@@ -24,6 +24,7 @@
 #include "Features/PerformanceOverlay.h"
 #include "Features/PostProcessing.h"
 #include "Features/RainRefraction.h"
+#include "Features/VanillaEnhancer.h"
 #include "Features/RemoteControl.h"
 #include "Features/RenderDoc.h"
 #include "Features/ScreenSpaceGI.h"
@@ -75,6 +76,7 @@ namespace globals
 		HorizonFix horizonFix{};
 		InteriorSun interiorSun{};
 		RainRefraction rainRefraction{};
+		VanillaEnhancer vanillaEnhancer{};
 		ScreenSpaceGI screenSpaceGI{};
 		ScreenSpaceShadows screenSpaceShadows{};
 		Skylighting skylighting{};

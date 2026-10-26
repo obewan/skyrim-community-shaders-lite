@@ -24,6 +24,7 @@
 #include "Features/PerformanceOverlay.h"
 #include "Features/PostProcessing.h"
 #include "Features/RainRefraction.h"
+#include "Features/VanillaEnhancer.h"
 #include "Features/RemoteControl.h"
 #include "Features/RenderDoc.h"
 #include "Features/ScreenSpaceGI.h"
@@ -280,7 +281,8 @@ const std::vector<Feature*>& Feature::GetFeatureList()
 		&globals::features::exponentialHeightFog,
 		&globals::features::hdrDisplay,
 		&globals::features::skin,
-		&globals::features::postProcessing
+		&globals::features::postProcessing,
+		&globals::features::vanillaEnhancer
 	};
 
 	return features;
