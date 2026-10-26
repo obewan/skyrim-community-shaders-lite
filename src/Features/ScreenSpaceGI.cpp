@@ -707,7 +707,9 @@ void ScreenSpaceGI::UpdateSB()
 		data.RcpTexDim = float2(1.0f) / res;
 		data.FrameDim = dynres;
 		data.RcpFrameDim = float2(1.0f) / dynres;
-		data.FrameIndex = globals::state->frameCount;
+		// Imnot Shaders: animate the noise only when TAA resolves it. Without TAA, a per-frame
+		// pattern leaves visible glitter, so hold it static as gi.cs.hlsl's noise loader expects.
+		data.FrameIndex = Util::GetTemporal() ? globals::state->frameCount : 0;
 
 		data.NumSlices = settings.NumSlices;
 		data.NumSteps = settings.NumSteps;
