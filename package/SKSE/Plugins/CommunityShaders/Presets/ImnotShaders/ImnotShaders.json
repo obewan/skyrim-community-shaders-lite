@@ -2,6 +2,6 @@
   "name": "Imnot Shaders",
   "version": "1.0.0",
   "author": "Imnotfamous",
-  "description": "Low-end defaults for Imnot Shaders: upscaling and frame generation off, Post Processing reduced to tone mapping and auto exposure, parallax self-shadowing off, Screen Space GI as ambient occlusion only. Remove this Baseline to fall back to the stock Community Shaders defaults.",
+  "description": "Low-end defaults for Imnot Shaders: upscaling and frame generation off, Post Processing reduced to tone mapping (auto exposure off, so snow stays white), parallax self-shadowing off, Screen Space GI as ambient occlusion only. Remove this Baseline to fall back to the stock Community Shaders defaults.",
   "type": "Baseline"
 }

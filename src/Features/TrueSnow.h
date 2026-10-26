@@ -35,7 +35,7 @@ public:
 	struct alignas(16) Settings
 	{
 		uint Enabled = true;
-		float Brightness = 1.4f;
+		float Brightness = 1.75f;
 		float Subsurface = 0.5f;
 		float SparkleIntensity = 1.0f;
 		float SparkleDensity = 0.5f;

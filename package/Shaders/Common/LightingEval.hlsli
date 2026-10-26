@@ -162,7 +162,7 @@ void EvaluateLighting(DirectContext context, MaterialProperties material, float3
 #	else
 	const float snowDiffuseScale = Color::BRDFScale;
 #	endif
-	lightingOutput.diffuse += TrueSnow::Scatter(context.worldNormal, context.viewDir, context.lightDir, context.lightColor, context.softShadow, material.SnowMask) * snowDiffuseScale;
+	lightingOutput.diffuse += TrueSnow::Scatter(context.worldNormal, context.viewDir, context.lightDir, context.lightColor, context.detailedShadow, context.softShadow, material.SnowMask) * snowDiffuseScale;
 #endif
 }
 

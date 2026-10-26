@@ -12,8 +12,8 @@
  */
 namespace TrueSnow
 {
-	/// Fresh snow reflects 80-90% of light; the cap keeps it below clipped white.
-	static const float MaxAlbedo = 0.9;
+	/// Fresh snow reflects 80-90% of light; Skyrim's light levels are not physical, so the cap allows a little more for a sunlit look.
+	static const float MaxAlbedo = 1.2;
 	/// How much of the texture's colour is kept: snow is near-neutral, but not grey.
 	static const float Saturation = 0.4;
 	/// Scattered light leaves snow bluish: red is absorbed most on the long paths through ice.
@@ -24,9 +24,11 @@ namespace TrueSnow
 	static const float FacetSpread = 0.9;
 	/// Facet alignment exponent: higher gives smaller, sharper sparkles.
 	static const float SparkleSharpness = 128.0;
-	static const float SparkleGain = 120.0;
+	static const float SparkleGain = 480.0;
 	/// Radius of a crystal inside its cell, as a fraction of the cell: glints are points, not squares.
 	static const float CrystalRadius = 0.12;
+	/// Fraction of a light's direct contribution returned inside its shadow at Subsurface 1.
+	static const float ShadowFillScale = 0.45;
 	/// Back-lit transmission falloff around the direction toward the light.
 	static const float TranslucencyFocus = 4.0;
 	/// Blinn-Phong exponent of the melt-layer sheen: broad and soft next to the crystal glints.
@@ -64,7 +66,7 @@ namespace TrueSnow
 	}
 
 	/// Snow brightness reached at a Brightness setting of 1; the setting scales it, capped at MaxAlbedo.
-	static const float TargetLuma = 0.45;
+	static const float TargetLuma = 0.6;
 	/// How much of the texture's own brightness variation survives the lift (1 keeps all of it).
 	static const float DetailKept = 0.15;
 
@@ -91,7 +93,7 @@ namespace TrueSnow
 	 * translucence, light transmitted through thin ridges and edges when the light is behind them.
 	 * Both tinted blue. Multiply by the lighting path's own diffuse scale.
 	 */
-	float3 Scatter(float3 N, float3 V, float3 L, float3 lightColor, float softShadow, float snowMask)
+	float3 Scatter(float3 N, float3 V, float3 L, float3 lightColor, float detailedShadow, float softShadow, float snowMask)
 	{
 		const SharedData::TrueSnowSettings settings = SharedData::trueSnowSettings;
 		if (!settings.Enabled || snowMask <= 0)
@@ -101,12 +103,33 @@ namespace TrueSnow
 		const float wrapped = saturate((NdotL + wrap) / (1 + wrap));
 		const float wrapExtra = max(wrapped - saturate(NdotL), 0);
 
+		// Light entering lit snow scatters under the surface and leaves in the shade, and bright
+		// snow around bounces light into it: shadows on snow are soft and luminous, not dark grey.
+		// Scaled by the light itself, so it closes the lit/shadow gap whatever the sun's strength.
+		const float shadowFill = wrapped * (1 - detailedShadow) * settings.Subsurface * ShadowFillScale;
+
 		// Looking toward the light, at surfaces seen edge-on: where the snow is thinnest to the eye
 		const float towardLight = pow(saturate(dot(V, -L)), TranslucencyFocus);
 		const float edge = 1 - saturate(dot(N, V));
 		const float transmission = towardLight * edge * edge * settings.Translucency;
 
-		return (wrapExtra + transmission) * ScatterTint * lightColor * softShadow * snowMask;
+		return ((wrapExtra + transmission) * softShadow + shadowFill) * ScatterTint * lightColor * snowMask;
+	}
+
+	/// Ambient boost of snow at a Subsurface setting of 1, before the cool tint.
+	static const float ShadeLiftScale = 1.0;
+
+	/**
+	 * Why shaded snow stays luminous: light scattered inside it. Driven by the Subsurface setting,
+	 * returned as a per-channel ambient multiplier minus 1, with the same cool tint as the
+	 * scattering, so snow in shadow and on cliff faces is lifted but not flattened.
+	 */
+	float3 ShadeLift(float snowMask)
+	{
+		if (!IsOn() || snowMask <= 0)
+			return 0;
+		const float3 tint = ScatterTint / dot(ScatterTint, float3(0.2126, 0.7152, 0.0722));
+		return SharedData::trueSnowSettings.Subsurface * ShadeLiftScale * snowMask * tint;
 	}
 
 	/**

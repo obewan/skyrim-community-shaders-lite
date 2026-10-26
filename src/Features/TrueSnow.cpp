@@ -27,12 +27,12 @@ void TrueSnow::DrawSettings()
 
 	ImGui::SliderFloat(T(TKEY("brightness"), "Brightness"), &settings.Brightness, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
-		ImGui::Text("%s", T(TKEY("brightness_tooltip"), "Lifts grey snow textures toward fresh-snow reflectance, keeping their detail. Capped below pure white."));
+		ImGui::Text("%s", T(TKEY("brightness_tooltip"), "Lifts grey snow textures toward fresh-snow brightness, keeping some of their detail. Snow looks grey under auto exposure, like on a camera: for white snow, turn Post Processing's auto exposure off."));
 	}
 
 	ImGui::SliderFloat(T(TKEY("subsurface"), "Subsurface"), &settings.Subsurface, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
-		ImGui::Text("%s", T(TKEY("subsurface_tooltip"), "Light scattered inside the snow: softens the shadow edge with a cool blue tint."));
+		ImGui::Text("%s", T(TKEY("subsurface_tooltip"), "Light scattered inside the snow: softens the shadow edge and keeps snow in shade luminous, with a cool blue tint."));
 	}
 
 	ImGui::SliderFloat(T(TKEY("translucency"), "Ice Translucency"), &settings.Translucency, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
@@ -57,7 +57,7 @@ void TrueSnow::DrawSettings()
 
 	ImGui::Checkbox(T(TKEY("debug_view"), "Debug View"), (bool*)&settings.DebugView);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
-		ImGui::Text("%s", T(TKEY("debug_view_tooltip"), "Paints the snow True Snow detects in red. Anything snowy that stays its normal colour is not reached."));
+		ImGui::Text("%s", T(TKEY("debug_view_tooltip"), "Paints the snow True Snow detects by source: landscape red, projected snow green, sparkle material blue, snow objects yellow. Anything snowy that keeps its normal colour is not detected."));
 	}
 }
 

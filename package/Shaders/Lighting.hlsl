@@ -2858,6 +2858,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 	}
 #	endif
 
+#	if defined(TRUE_SNOW)
+	directionalAmbientColor *= 1 + TrueSnow::ShadeLift(material.SnowMask);
+#	endif
+
 #	if defined(LANDSCAPE)
 	if (SharedData::lodBlendingSettings.DisableTerrainVertexColors)
 		input.Color.xyz = 1;

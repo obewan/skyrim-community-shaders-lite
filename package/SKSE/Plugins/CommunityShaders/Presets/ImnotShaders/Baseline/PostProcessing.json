@@ -1,15 +1,38 @@
 {
   "_metadata": {
-    "description": "Keep only tone mapping and auto exposure; the full-screen effects start off and the vanilla equivalents run instead."
+    "description": "Keep only tone mapping; the full-screen effects start off and the vanilla equivalents run instead. Auto exposure is off too: like a camera, it exposes bright snow down to grey, and Skyrim's own eye adaptation takes over."
   },
-  "Depth of Field": { "enabled": false },
-  "Vignette": { "enabled": false },
-  "Local Exposure": { "enabled": false },
-  "Motion Blur": { "enabled": false },
-  "Physical Glare": { "enabled": false },
-  "COD Bloom": { "enabled": false },
-  "Lens Flare": { "enabled": false },
-  "LUT": { "enabled": false },
-  "Camera": { "enabled": false },
-  "Border": { "enabled": false }
+  "Depth of Field": {
+    "enabled": false
+  },
+  "Vignette": {
+    "enabled": false
+  },
+  "Local Exposure": {
+    "enabled": false
+  },
+  "Motion Blur": {
+    "enabled": false
+  },
+  "Physical Glare": {
+    "enabled": false
+  },
+  "COD Bloom": {
+    "enabled": false
+  },
+  "Lens Flare": {
+    "enabled": false
+  },
+  "LUT": {
+    "enabled": false
+  },
+  "Camera": {
+    "enabled": false
+  },
+  "Border": {
+    "enabled": false
+  },
+  "Histogram Auto Exposure": {
+    "enabled": false
+  }
 }
