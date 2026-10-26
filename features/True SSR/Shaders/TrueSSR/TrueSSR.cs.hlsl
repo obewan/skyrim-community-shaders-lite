@@ -22,7 +22,8 @@ Texture2D<float3> ReflectanceTexture : register(t2);
 Texture2D<float3> MainTexture : register(t3);  // lit diffuse before the composite, scene space
 Texture2D<float3> SpecularTexture : register(t4);  // direct specular, linear
 
-RWTexture2D<float4> OutputRW : register(u0);  // rgb = reflected radiance (linear), a = confidence
+RWTexture2D<float4> OutputRW : register(u0);       // rgb = reflected radiance (linear), a = confidence
+RWTexture2D<float> HitDistanceRW : register(u1);  // world-space ray length to the hit, 0 on a miss
 
 SamplerState LinearSampler : register(s0);
 
@@ -39,6 +40,9 @@ cbuffer TrueSSRCB : register(b0)
 	uint FrameIndex;     // 0 while TAA is off, so the jitter is static rather than glittering
 	float BaseReflectance;  // F0 given to surfaces whose G-buffer reflectance is zero; 0 skips them
 	float BaseRoughness;    // roughness assumed for those surfaces, whose G-buffer value is meaningless
+	uint2 FullDim;          // full-resolution dispatch size, used by the resolve pass
+	float BlurStrength;     // used by the resolve pass
+	float pad0;
 };
 
 static const uint RefineSteps = 4;
@@ -94,6 +98,7 @@ float EdgeFactor(float2 uv)
 		return;
 
 	OutputRW[dispatchID.xy] = 0;
+	HitDistanceRW[dispatchID.xy] = 0;
 
 	const uint2 pixel = dispatchID.xy * ResolutionScale;
 	// Most vanilla materials (no envmap or specular) write no reflectance. Like ReShade TrueLight,
@@ -188,4 +193,5 @@ float EdgeFactor(float2 uv)
 	const float confidence = Intensity * EdgeFactor(hitUV) * facingFade * roughnessFade * distanceFade;
 
 	OutputRW[dispatchID.xy] = float4(max(radiance, 0), saturate(confidence));
+	HitDistanceRW[dispatchID.xy] = hitT;
 }

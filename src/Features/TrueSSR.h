@@ -37,12 +37,13 @@ public:
 		uint MaxSteps = 24;
 		float MaxDistance = 3000.0f;
 		float Thickness = 40.0f;
-		float RoughnessCutoff = 0.6f;
+		float RoughnessCutoff = 0.8f;
 		float Intensity = 1.0f;
 		float EdgeFade = 0.1f;
 		float ReflectionStrength = 1.0f;
 		float BaseReflectance = 0.04f;
 		float BaseRoughness = 0.25f;
+		float BlurStrength = 1.0f;
 		bool DebugView = false;
 	} settings;
 
@@ -76,6 +77,9 @@ public:
 		uint FrameIndex;
 		float BaseReflectance;
 		float BaseRoughness;
+		uint FullDim[2];
+		float BlurStrength;
+		float pad0;
 	};
 	STATIC_ASSERT_ALIGNAS_16(TrueSSRCB);
 
@@ -97,17 +101,21 @@ public:
 	void Draw(ID3D11ShaderResourceView* a_depth, ID3D11ShaderResourceView* a_normalRoughness, ID3D11ShaderResourceView* a_reflectance,
 		ID3D11ShaderResourceView* a_main, ID3D11ShaderResourceView* a_specular);
 
-	/** @brief The reflections traced this frame, or nullptr when the pass did not run (the composite then keeps the cubemap). */
-	ID3D11ShaderResourceView* GetOutputSRV() const { return drawnThisFrame && output ? output->srv.get() : nullptr; }
+	/** @brief This frame's resolved reflections at full resolution, or nullptr when the passes did not run (the composite then keeps the cubemap). */
+	ID3D11ShaderResourceView* GetOutputSRV() const { return drawnThisFrame && resolved ? resolved->srv.get() : nullptr; }
 
 private:
-	ID3D11ComputeShader* GetComputeShader();
-	/** @brief (Re)creates the output texture for the current resolution mode and screen size. */
-	void EnsureOutput(uint a_scale);
+	/** @brief Compiles (once) one of the feature's compute shaders. */
+	ID3D11ComputeShader* GetComputeShader(winrt::com_ptr<ID3D11ComputeShader>& a_shader, const wchar_t* a_path);
+	/** @brief (Re)creates the trace and resolve textures for the current resolution mode and screen size. */
+	void EnsureTextures(uint a_scale);
 
-	eastl::unique_ptr<Texture2D> output;
-	uint outputScale = 0;
+	eastl::unique_ptr<Texture2D> traced;       // trace resolution: radiance + confidence
+	eastl::unique_ptr<Texture2D> hitDistance;  // trace resolution: ray length to the hit
+	eastl::unique_ptr<Texture2D> resolved;     // full resolution: blurred, upsampled, read by the composite
+	uint traceScale = 0;
 	eastl::unique_ptr<ConstantBuffer> constantBuffer;
-	winrt::com_ptr<ID3D11ComputeShader> computeShader;
+	winrt::com_ptr<ID3D11ComputeShader> traceShader;
+	winrt::com_ptr<ID3D11ComputeShader> resolveShader;
 	bool drawnThisFrame = false;
 };

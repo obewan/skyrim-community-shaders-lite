@@ -19,6 +19,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	ReflectionStrength,
 	BaseReflectance,
 	BaseRoughness,
+	BlurStrength,
 	DebugView)
 
 namespace
@@ -66,7 +67,7 @@ void TrueSSR::DrawSettings()
 
 	ImGui::SliderFloat(T(TKEY("roughness_cutoff"), "Roughness Cutoff"), &settings.RoughnessCutoff, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
-		ImGui::Text("%s", T(TKEY("roughness_cutoff_tooltip"), "Surfaces rougher than this keep Dynamic Cubemaps reflections; smoother ones fade into screen-space reflections."));
+		ImGui::Text("%s", T(TKEY("roughness_cutoff_tooltip"), "Surfaces rougher than this keep Dynamic Cubemaps reflections. Below it, screen-space reflections blur with roughness and fade into the cubemap near the cutoff."));
 	}
 
 	ImGui::SliderFloat(T(TKEY("intensity"), "Intensity"), &settings.Intensity, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
@@ -87,6 +88,11 @@ void TrueSSR::DrawSettings()
 	ImGui::SliderFloat(T(TKEY("base_roughness"), "Base Roughness"), &settings.BaseRoughness, 0.0f, 0.6f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
 		ImGui::Text("%s", T(TKEY("base_roughness_tooltip"), "Roughness assumed for those surfaces. Lower values give sharper reflections; at or above Roughness Cutoff they are skipped."));
+	}
+
+	ImGui::SliderFloat(T(TKEY("blur_strength"), "Blur Strength"), &settings.BlurStrength, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	if (auto _tt = Util::HoverTooltipWrapper()) {
+		ImGui::Text("%s", T(TKEY("blur_strength_tooltip"), "Blur of reflections on rough surfaces, growing with roughness and with the distance to what is reflected. 0 keeps every reflection sharp."));
 	}
 
 	ImGui::SliderFloat(T(TKEY("edge_fade"), "Edge Fade"), &settings.EdgeFade, 0.01f, 0.5f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
@@ -115,6 +121,7 @@ void TrueSSR::LoadSettings(json& o_json)
 	settings.ReflectionStrength = std::clamp(settings.ReflectionStrength, 1.0f, 3.0f);
 	settings.BaseReflectance = std::clamp(settings.BaseReflectance, 0.0f, 0.1f);
 	settings.BaseRoughness = std::clamp(settings.BaseRoughness, 0.0f, 0.6f);
+	settings.BlurStrength = std::clamp(settings.BlurStrength, 0.0f, 2.0f);
 }
 
 void TrueSSR::SaveSettings(json& o_json)
@@ -134,55 +141,67 @@ void TrueSSR::SetupResources()
 
 void TrueSSR::ClearShaderCache()
 {
-	computeShader = nullptr;
+	traceShader = nullptr;
+	resolveShader = nullptr;
 }
 
-ID3D11ComputeShader* TrueSSR::GetComputeShader()
+ID3D11ComputeShader* TrueSSR::GetComputeShader(winrt::com_ptr<ID3D11ComputeShader>& a_shader, const wchar_t* a_path)
 {
-	if (!computeShader) {
+	if (!a_shader) {
 		std::vector<std::pair<const char*, const char*>> defines;
 		// The depth SRV's type differs with Terrain Blending, as in DeferredCompositeCS
 		if (globals::features::terrainBlending.loaded)
 			defines.push_back({ "TERRAIN_BLENDING", nullptr });
-		if (auto shader = static_cast<ID3D11ComputeShader*>(Util::CompileShader(L"Data\\Shaders\\TrueSSR\\TrueSSR.cs.hlsl", defines, "cs_5_0")))
-			computeShader.attach(shader);
+		if (auto shader = static_cast<ID3D11ComputeShader*>(Util::CompileShader(a_path, defines, "cs_5_0")))
+			a_shader.attach(shader);
 		else
-			logger::error("[True SSR] Failed to compile TrueSSR.cs.hlsl, reflections fall back to Dynamic Cubemaps");
+			logger::error("[True SSR] Failed to compile {}, reflections fall back to Dynamic Cubemaps", Util::WStringToString(a_path));
 	}
-	return computeShader.get();
+	return a_shader.get();
 }
 
-void TrueSSR::EnsureOutput(uint a_scale)
+namespace
+{
+	eastl::unique_ptr<Texture2D> CreateComputeTexture(uint a_width, uint a_height, DXGI_FORMAT a_format, const char* a_name)
+	{
+		D3D11_TEXTURE2D_DESC desc{
+			.Width = a_width,
+			.Height = a_height,
+			.MipLevels = 1,
+			.ArraySize = 1,
+			.Format = a_format,
+			.SampleDesc = { 1, 0 },
+			.Usage = D3D11_USAGE_DEFAULT,
+			.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS,
+			.CPUAccessFlags = 0,
+			.MiscFlags = 0
+		};
+		auto texture = eastl::make_unique<Texture2D>(desc, a_name);
+		texture->CreateSRV({ .Format = a_format, .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D, .Texture2D = { .MostDetailedMip = 0, .MipLevels = 1 } });
+		texture->CreateUAV({ .Format = a_format, .ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D, .Texture2D = { .MipSlice = 0 } });
+		return texture;
+	}
+}
+
+void TrueSSR::EnsureTextures(uint a_scale)
 {
 	const auto& mainTarget = globals::game::renderer->GetRuntimeData().renderTargets[RE::RENDER_TARGETS::kMAIN];
 	D3D11_TEXTURE2D_DESC mainDesc;
 	mainTarget.texture->GetDesc(&mainDesc);
-	const uint width = (mainDesc.Width + a_scale - 1) / a_scale;
-	const uint height = (mainDesc.Height + a_scale - 1) / a_scale;
+	const uint traceWidth = (mainDesc.Width + a_scale - 1) / a_scale;
+	const uint traceHeight = (mainDesc.Height + a_scale - 1) / a_scale;
 
-	if (output && outputScale == a_scale) {
-		D3D11_TEXTURE2D_DESC currentDesc;
-		output->resource->GetDesc(&currentDesc);
-		if (currentDesc.Width == width && currentDesc.Height == height)
+	if (traced && traceScale == a_scale) {
+		D3D11_TEXTURE2D_DESC resolvedDesc;
+		resolved->resource->GetDesc(&resolvedDesc);
+		if (resolvedDesc.Width == mainDesc.Width && resolvedDesc.Height == mainDesc.Height)
 			return;
 	}
 
-	D3D11_TEXTURE2D_DESC desc{
-		.Width = width,
-		.Height = height,
-		.MipLevels = 1,
-		.ArraySize = 1,
-		.Format = DXGI_FORMAT_R16G16B16A16_FLOAT,
-		.SampleDesc = { 1, 0 },
-		.Usage = D3D11_USAGE_DEFAULT,
-		.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS,
-		.CPUAccessFlags = 0,
-		.MiscFlags = 0
-	};
-	output = eastl::make_unique<Texture2D>(desc, "TrueSSR::Output");
-	output->CreateSRV({ .Format = desc.Format, .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D, .Texture2D = { .MostDetailedMip = 0, .MipLevels = 1 } });
-	output->CreateUAV({ .Format = desc.Format, .ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D, .Texture2D = { .MipSlice = 0 } });
-	outputScale = a_scale;
+	traced = CreateComputeTexture(traceWidth, traceHeight, DXGI_FORMAT_R16G16B16A16_FLOAT, "TrueSSR::Traced");
+	hitDistance = CreateComputeTexture(traceWidth, traceHeight, DXGI_FORMAT_R16_FLOAT, "TrueSSR::HitDistance");
+	resolved = CreateComputeTexture(mainDesc.Width, mainDesc.Height, DXGI_FORMAT_R16G16B16A16_FLOAT, "TrueSSR::Resolved");
+	traceScale = a_scale;
 }
 
 void TrueSSR::Draw(ID3D11ShaderResourceView* a_depth, ID3D11ShaderResourceView* a_normalRoughness, ID3D11ShaderResourceView* a_reflectance,
@@ -192,19 +211,22 @@ void TrueSSR::Draw(ID3D11ShaderResourceView* a_depth, ID3D11ShaderResourceView* 
 	if (!settings.Enabled || !constantBuffer || !a_depth || !a_normalRoughness || !a_reflectance || !a_main || !a_specular)
 		return;
 
-	auto shader = GetComputeShader();
-	if (!shader)
+	auto trace = GetComputeShader(traceShader, L"Data\\Shaders\\TrueSSR\\TrueSSR.cs.hlsl");
+	auto resolve = GetComputeShader(resolveShader, L"Data\\Shaders\\TrueSSR\\TrueSSRResolve.cs.hlsl");
+	if (!trace || !resolve)
 		return;
 
 	const uint scale = settings.ResolutionMode == 0 ? 1u : 2u;
-	EnsureOutput(scale);
+	EnsureTextures(scale);
 
 	const float2 size = Util::ConvertToDynamic(float2{ (float)globals::game::graphicsState->screenWidth, (float)globals::game::graphicsState->screenHeight });
-	const uint outputWidth = ((uint)size.x + scale - 1) / scale;
-	const uint outputHeight = ((uint)size.y + scale - 1) / scale;
+	const uint fullWidth = (uint)size.x;
+	const uint fullHeight = (uint)size.y;
+	const uint traceWidth = (fullWidth + scale - 1) / scale;
+	const uint traceHeight = (fullHeight + scale - 1) / scale;
 
 	TrueSSRCB data{
-		.OutputDim = { outputWidth, outputHeight },
+		.OutputDim = { traceWidth, traceHeight },
 		.ResolutionScale = scale,
 		.MaxSteps = settings.MaxSteps,
 		.MaxDistance = settings.MaxDistance,
@@ -215,7 +237,9 @@ void TrueSSR::Draw(ID3D11ShaderResourceView* a_depth, ID3D11ShaderResourceView* 
 		// Animated jitter only when TAA resolves it, as for Screen Space GI
 		.FrameIndex = Util::GetTemporal() ? globals::state->frameCount : 0u,
 		.BaseReflectance = settings.BaseReflectance,
-		.BaseRoughness = settings.BaseRoughness
+		.BaseRoughness = settings.BaseRoughness,
+		.FullDim = { fullWidth, fullHeight },
+		.BlurStrength = settings.BlurStrength
 	};
 	constantBuffer->Update(data);
 
@@ -226,15 +250,34 @@ void TrueSSR::Draw(ID3D11ShaderResourceView* a_depth, ID3D11ShaderResourceView* 
 	context->CSSetConstantBuffers(5, 1, &sharedDataBuffer);
 	context->CSSetSamplers(0, 1, &globals::deferred->linearSampler);
 
-	ID3D11ShaderResourceView* srvs[5]{ a_depth, a_normalRoughness, a_reflectance, a_main, a_specular };
-	context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
-	ID3D11UnorderedAccessView* uav = output->uav.get();
-	context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
-	context->CSSetShader(shader, nullptr, 0);
+	// Trace: one ray per trace-resolution pixel
+	{
+		ID3D11ShaderResourceView* srvs[5]{ a_depth, a_normalRoughness, a_reflectance, a_main, a_specular };
+		context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
+		ID3D11UnorderedAccessView* uavs[2]{ traced->uav.get(), hitDistance->uav.get() };
+		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(uavs), uavs, nullptr);
+		context->CSSetShader(trace, nullptr, 0);
 
-	globals::profiler->BeginPass("TrueSSR");
-	context->Dispatch((outputWidth + 7) / 8, (outputHeight + 7) / 8, 1);
-	globals::profiler->EndPass();
+		globals::profiler->BeginPass("TrueSSR::Trace");
+		context->Dispatch((traceWidth + 7) / 8, (traceHeight + 7) / 8, 1);
+		globals::profiler->EndPass();
+
+		ID3D11UnorderedAccessView* nullUavs[2]{};
+		context->CSSetUnorderedAccessViews(0, ARRAYSIZE(nullUavs), nullUavs, nullptr);
+	}
+
+	// Resolve: glossy blur and depth/normal-aware upsample to full resolution
+	{
+		ID3D11ShaderResourceView* srvs[5]{ a_depth, a_normalRoughness, a_reflectance, traced->srv.get(), hitDistance->srv.get() };
+		context->CSSetShaderResources(0, ARRAYSIZE(srvs), srvs);
+		ID3D11UnorderedAccessView* uav = resolved->uav.get();
+		context->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+		context->CSSetShader(resolve, nullptr, 0);
+
+		globals::profiler->BeginPass("TrueSSR::Resolve");
+		context->Dispatch((fullWidth + 7) / 8, (fullHeight + 7) / 8, 1);
+		globals::profiler->EndPass();
+	}
 
 	ID3D11ShaderResourceView* nullSrvs[5]{};
 	context->CSSetShaderResources(0, ARRAYSIZE(nullSrvs), nullSrvs);
