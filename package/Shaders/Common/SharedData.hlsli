@@ -488,7 +488,8 @@ namespace SharedData
 		float Fresnel;
 		uint HorizonFix;
 		float NormalOcclusion;
-		float3 pad0;
+		float TextureSharpening;
+		float2 pad0;
 	};
 
 	cbuffer FeatureData : register(b6)

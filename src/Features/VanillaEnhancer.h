@@ -27,7 +27,8 @@ public:
 				T("feature.vanilla_enhancer.key_feature_2", "Fresnel brightening at grazing angles"),
 				T("feature.vanilla_enhancer.key_feature_3", "No more highlights on the side facing away from the light"),
 				T("feature.vanilla_enhancer.key_feature_4", "Normal map occlusion: grooves and cracks receive less ambient light"),
-				T("feature.vanilla_enhancer.key_feature_5", "No extra textures, a few instructions per pixel") } };
+				T("feature.vanilla_enhancer.key_feature_5", "Texture-space sharpening of diffuse detail, without screen-space halos"),
+				T("feature.vanilla_enhancer.key_feature_6", "No extra textures: a few instructions and one extra texture sample per pixel") } };
 	}
 
 	/** @brief User settings; also the feature buffer data, matching VanillaEnhancerSettings in SharedData.hlsli. */
@@ -38,7 +39,8 @@ public:
 		float Fresnel = 0.5f;
 		uint HorizonFix = true;
 		float NormalOcclusion = 0.5f;
-		float pad0[3]{};
+		float TextureSharpening = 0.5f;
+		float pad0[2]{};
 	} settings;
 	STATIC_ASSERT_ALIGNAS_16(Settings);
 

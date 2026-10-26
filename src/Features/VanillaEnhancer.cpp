@@ -9,7 +9,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	SpecularEnergy,
 	Fresnel,
 	HorizonFix,
-	NormalOcclusion)
+	NormalOcclusion,
+	TextureSharpening)
 
 #define I18N_KEY_PREFIX "feature.vanilla_enhancer."
 
@@ -41,6 +42,11 @@ void VanillaEnhancer::DrawSettings()
 	if (auto _tt = Util::HoverTooltipWrapper()) {
 		ImGui::Text("%s", T(TKEY("normal_occlusion_tooltip"), "Darkens ambient light and reflections where the normal map implies grooves and cracks."));
 	}
+
+	ImGui::SliderFloat(T(TKEY("texture_sharpening"), "Texture Sharpening"), &settings.TextureSharpening, 0.0f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	if (auto _tt = Util::HoverTooltipWrapper()) {
+		ImGui::Text("%s", T(TKEY("texture_sharpening_tooltip"), "Sharpens the detail of vanilla diffuse textures where they are sampled, so it cannot halo around objects.\nFades out on distant surfaces to avoid shimmering. Costs one extra texture sample on vanilla objects."));
+	}
 }
 
 #undef I18N_KEY_PREFIX
@@ -51,6 +57,7 @@ void VanillaEnhancer::LoadSettings(json& o_json)
 	settings.SpecularEnergy = std::clamp(settings.SpecularEnergy, 0.0f, 1.0f);
 	settings.Fresnel = std::clamp(settings.Fresnel, 0.0f, 1.0f);
 	settings.NormalOcclusion = std::clamp(settings.NormalOcclusion, 0.0f, 1.0f);
+	settings.TextureSharpening = std::clamp(settings.TextureSharpening, 0.0f, 1.0f);
 }
 
 void VanillaEnhancer::SaveSettings(json& o_json)

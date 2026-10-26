@@ -55,6 +55,37 @@ namespace VanillaEnhancer
 		const float alignment = saturate(dot(normalize(mappedNormal), normalize(vertexNormal)));
 		return lerp(1.0, alignment * alignment, settings.NormalOcclusion);
 	}
+
+	/// Extra mip bias of the blurred sample whose difference from the regular one is the detail.
+	static const float SharpenMipOffset = 1.5;
+	/// Mip level at which sharpening has fully faded out: minified textures would only shimmer.
+	static const float SharpenFadeLod = 3.0;
+	/// Detail gain at a Texture Sharpening setting of 1.
+	static const float SharpenMaxGain = 1.5;
+	/// Soft-knee scale: detail well below 1/SharpenKnee passes linearly, strong contrast is compressed.
+	static const float SharpenKnee = 4.0;
+
+	bool IsTextureSharpeningOn()
+	{
+		const SharedData::VanillaEnhancerSettings settings = SharedData::vanillaEnhancerSettings;
+		return settings.Enabled && settings.TextureSharpening > 0.0;
+	}
+
+	/**
+	 * Unsharp mask in texture space: the detail is the difference between the regular sample and
+	 * one taken SharpenMipOffset mips blurrier. Working on the texture rather than the screen makes
+	 * it perspective-correct and unable to halo at silhouettes, the two things a screen-space
+	 * sharpener has to work around. Luma-only, so red and blue detail does not speckle; a log knee
+	 * keeps strong contrast from crunching. `lod` is the texture's own mip level, which fades the
+	 * effect out where the texture is minified and sharpening would only add shimmer under TAA.
+	 */
+	float3 SharpenTexture(float3 color, float3 blurred, float lod)
+	{
+		const float detail = dot(color - blurred, float3(0.2126, 0.7152, 0.0722));
+		const float kneed = sign(detail) * log(abs(detail) * SharpenKnee + 1.0) / SharpenKnee;
+		const float fade = saturate(1.0 - lod / SharpenFadeLod);
+		return max(color + kneed * SharedData::vanillaEnhancerSettings.TextureSharpening * SharpenMaxGain * fade, 0.0);
+	}
 }
 
 #endif  // VANILLA_ENHANCER_HLSLI

@@ -1514,6 +1514,20 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 #	else  // Non-landscape code
 	float4 sampledBaseColor;
 	MESH_TV_SAMPLE_BIAS(sampledBaseColor, TexColorSampler, SampColorSampler, diffuseUv);
+#		if defined(VANILLA_ENHANCER) && !defined(TRUE_PBR) && !defined(FACEGEN) && !defined(FACEGEN_RGB_TINT)
+	[branch] if (VanillaEnhancer::IsTextureSharpeningOn())
+	{
+		// The blurred sample follows the same (possibly stochastic) path as the regular one
+		const float sharpenBias = SharedData::MipBias + VanillaEnhancer::SharpenMipOffset;
+		float4 blurredBaseColor = TexColorSampler.SampleBias(SampColorSampler, diffuseUv, sharpenBias);
+#			if defined(TERRAIN_VARIATION_MESH)
+		[branch] if (applyMeshTV)
+			blurredBaseColor = StochasticEffectBias(TexColorSampler, SampColorSampler, diffuseUv, meshOffset, sharpenBias);
+#			endif
+		const float textureLod = TexColorSampler.CalculateLevelOfDetail(SampColorSampler, diffuseUv);
+		sampledBaseColor.rgb = VanillaEnhancer::SharpenTexture(sampledBaseColor.rgb, blurredBaseColor.rgb, textureLod);
+	}
+#		endif
 #		if defined(ENABLE_LL) && defined(FACEGEN)
 	sampledBaseColor.rgb = GetFacegenBaseColor(sampledBaseColor.rgb, uv);
 #		elif defined(ENABLE_LL) && defined(FACEGEN_RGB_TINT)
