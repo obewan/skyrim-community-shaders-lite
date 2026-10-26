@@ -496,7 +496,8 @@ namespace SharedData
 	{
 		float ReflectionStrength;
 		uint DebugView;
-		float2 pad0;
+		float BaseReflectance;
+		float pad0;
 	};
 
 	cbuffer FeatureData : register(b6)

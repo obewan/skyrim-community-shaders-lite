@@ -17,6 +17,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
 	Intensity,
 	EdgeFade,
 	ReflectionStrength,
+	BaseReflectance,
+	BaseRoughness,
 	DebugView)
 
 namespace
@@ -77,6 +79,16 @@ void TrueSSR::DrawSettings()
 		ImGui::Text("%s", T(TKEY("reflection_strength_tooltip"), "Multiplies screen-space reflections only. 1 is physically based; higher values make them more visible."));
 	}
 
+	ImGui::SliderFloat(T(TKEY("base_reflectance"), "Base Reflectance"), &settings.BaseReflectance, 0.0f, 0.1f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+	if (auto _tt = Util::HoverTooltipWrapper()) {
+		ImGui::Text("%s", T(TKEY("base_reflectance_tooltip"), "Reflectance given to surfaces the game marks as non-reflective, like most vanilla wood, stone and cloth.\n0.04 is a typical dielectric: weak face-on, strong at grazing angles. 0 reflects only materials that are reflective in the game."));
+	}
+
+	ImGui::SliderFloat(T(TKEY("base_roughness"), "Base Roughness"), &settings.BaseRoughness, 0.0f, 0.6f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	if (auto _tt = Util::HoverTooltipWrapper()) {
+		ImGui::Text("%s", T(TKEY("base_roughness_tooltip"), "Roughness assumed for those surfaces. Lower values give sharper reflections; at or above Roughness Cutoff they are skipped."));
+	}
+
 	ImGui::SliderFloat(T(TKEY("edge_fade"), "Edge Fade"), &settings.EdgeFade, 0.01f, 0.5f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 	if (auto _tt = Util::HoverTooltipWrapper()) {
 		ImGui::Text("%s", T(TKEY("edge_fade_tooltip"), "Fraction of the screen over which reflections fade out near its borders."));
@@ -101,6 +113,8 @@ void TrueSSR::LoadSettings(json& o_json)
 	settings.Intensity = std::clamp(settings.Intensity, 0.0f, 1.0f);
 	settings.EdgeFade = std::clamp(settings.EdgeFade, 0.01f, 0.5f);
 	settings.ReflectionStrength = std::clamp(settings.ReflectionStrength, 1.0f, 3.0f);
+	settings.BaseReflectance = std::clamp(settings.BaseReflectance, 0.0f, 0.1f);
+	settings.BaseRoughness = std::clamp(settings.BaseRoughness, 0.0f, 0.6f);
 }
 
 void TrueSSR::SaveSettings(json& o_json)
@@ -199,7 +213,9 @@ void TrueSSR::Draw(ID3D11ShaderResourceView* a_depth, ID3D11ShaderResourceView* 
 		.Intensity = settings.Intensity,
 		.EdgeFade = settings.EdgeFade,
 		// Animated jitter only when TAA resolves it, as for Screen Space GI
-		.FrameIndex = Util::GetTemporal() ? globals::state->frameCount : 0u
+		.FrameIndex = Util::GetTemporal() ? globals::state->frameCount : 0u,
+		.BaseReflectance = settings.BaseReflectance,
+		.BaseRoughness = settings.BaseRoughness
 	};
 	constantBuffer->Update(data);
 

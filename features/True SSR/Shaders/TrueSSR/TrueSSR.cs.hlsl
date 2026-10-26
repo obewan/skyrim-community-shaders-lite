@@ -37,7 +37,8 @@ cbuffer TrueSSRCB : register(b0)
 	float Intensity;
 	float EdgeFade;      // fraction of the screen faded at each border
 	uint FrameIndex;     // 0 while TAA is off, so the jitter is static rather than glittering
-	float2 pad0;
+	float BaseReflectance;  // F0 given to surfaces whose G-buffer reflectance is zero; 0 skips them
+	float BaseRoughness;    // roughness assumed for those surfaces, whose G-buffer value is meaningless
 };
 
 static const uint RefineSteps = 4;
@@ -95,8 +96,10 @@ float EdgeFactor(float2 uv)
 	OutputRW[dispatchID.xy] = 0;
 
 	const uint2 pixel = dispatchID.xy * ResolutionScale;
-	const float3 reflectance = ReflectanceTexture[pixel];
-	if (all(reflectance <= 0))
+	// Most vanilla materials (no envmap or specular) write no reflectance. Like ReShade TrueLight,
+	// they can still be given a base dielectric reflectance; the composite adds their Fresnel term.
+	const bool baseReflectanceOnly = all(ReflectanceTexture[pixel] <= 0);
+	if (baseReflectanceOnly && BaseReflectance <= 0)
 		return;
 
 	const float rawDepth = DepthTexture[pixel];
@@ -104,7 +107,7 @@ float EdgeFactor(float2 uv)
 		return;
 
 	const float3 normalRoughness = NormalRoughnessTexture[pixel];
-	const float roughness = 1 - normalRoughness.z;
+	const float roughness = baseReflectanceOnly ? BaseRoughness : 1 - normalRoughness.z;
 	if (roughness >= RoughnessCutoff)
 		return;
 

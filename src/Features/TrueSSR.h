@@ -41,6 +41,8 @@ public:
 		float Intensity = 1.0f;
 		float EdgeFade = 0.1f;
 		float ReflectionStrength = 1.0f;
+		float BaseReflectance = 0.04f;
+		float BaseRoughness = 0.25f;
 		bool DebugView = false;
 	} settings;
 
@@ -49,12 +51,16 @@ public:
 	{
 		float ReflectionStrength;
 		uint DebugView;
-		float pad0[2];
+		float BaseReflectance;
+		float pad0;
 	};
 	STATIC_ASSERT_ALIGNAS_16(PerFrame);
 
 	/** @brief Composite-side settings for the feature buffer. */
-	PerFrame GetCommonBufferData() const { return { .ReflectionStrength = settings.ReflectionStrength, .DebugView = settings.DebugView ? 1u : 0u }; }
+	PerFrame GetCommonBufferData() const
+	{
+		return { .ReflectionStrength = settings.ReflectionStrength, .DebugView = settings.DebugView ? 1u : 0u, .BaseReflectance = settings.Enabled ? settings.BaseReflectance : 0.0f };
+	}
 
 	/** @brief Constant buffer for TrueSSR.cs.hlsl, matching TrueSSRCB. */
 	struct alignas(16) TrueSSRCB
@@ -68,7 +74,8 @@ public:
 		float Intensity;
 		float EdgeFade;
 		uint FrameIndex;
-		float pad0[2];
+		float BaseReflectance;
+		float BaseRoughness;
 	};
 	STATIC_ASSERT_ALIGNAS_16(TrueSSRCB);
 

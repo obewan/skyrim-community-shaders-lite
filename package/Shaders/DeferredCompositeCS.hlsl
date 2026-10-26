@@ -312,6 +312,20 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, inout float ao, out float3 il,
 
 		color += reflectance * finalIrradiance;
 	}
+#	if defined(TRUE_SSR)
+	else if (SharedData::trueSSRSettings.BaseReflectance > 0 && depth < 1.0) {
+		// No G-buffer reflectance, so no cubemap reflection to replace: add the screen-space
+		// reflection with the base dielectric reflectance and Schlick Fresnel instead
+		const float4 trueSSR = TrueSSRTexture.SampleLevel(LinearSampler, (dispatchID.xy + 0.5) * SharedData::BufferDim.zw, 0);
+		const float NdotV = saturate(dot(normalWS, -normalize(positionWS.xyz)));
+		const float baseF0 = SharedData::trueSSRSettings.BaseReflectance;
+		const float fresnel = baseF0 + (1 - baseF0) * pow(1 - NdotV, 5);
+		const float3 ssrContribution = fresnel * trueSSR.rgb * SharedData::trueSSRSettings.ReflectionStrength * saturate(trueSSR.a);
+		color += ssrContribution;
+		if (SharedData::trueSSRSettings.DebugView)
+			trueSSRDebug = ssrContribution;
+	}
+#	endif
 
 #	if defined(TRUE_SSR)
 	// Reflection contribution alone, brightened so the faint dielectric reflections are readable
