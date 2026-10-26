@@ -593,7 +593,8 @@ unset(_valid_feature_paths)
 unset(_feat_files)
 
 # Feature folders Imnot Shaders does not ship: too heavy for low-end GPUs, or
-# developer tools. A feature whose .ini is absent never loads (Feature::Load
+# developer tools. Screen Space GI is shipped, but the bundled ImnotShaders
+# Baseline pack runs it as AO only at half resolution. A feature whose .ini is absent never loads (Feature::Load
 # returns early, silently), so leaving the folder out is the whole removal; the
 # C++ stays in the DLL to keep upstream merges cheap. Every shader include of
 # these features is guarded by the feature's define, so nothing else breaks.
@@ -613,7 +614,6 @@ set(IMNOT_EXCLUDED_FEATURES
     "Remote Control"
     "RenderDoc"
     "Scene Manager"
-    "Screen Space GI"
     "Screen-Space Shadows"
     "Screenshot"
     "Subsurface Scattering"

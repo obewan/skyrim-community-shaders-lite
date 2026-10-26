@@ -1,0 +1,12 @@
+{
+  "_metadata": {
+    "description": "SSGI Lite: ambient occlusion only, no indirect lighting, with upstream's AO-only sampling (1 slice, 6 steps) at half resolution. The temporal denoiser cleans up the low sample count."
+  },
+  "Enabled": true,
+  "EnableGI": false,
+  "NumSlices": 1,
+  "NumSteps": 6,
+  "ResolutionMode": 1,
+  "EnableTemporalDenoiser": true,
+  "EnableBlur": true
+}
