@@ -12,6 +12,7 @@
 #include "Features/Effects11.h"
 #include "Features/IBL.h"
 #include "Features/ScreenSpaceGI.h"
+#include "Features/TrueSSR.h"
 #include "Features/Skylighting.h"
 #include "Features/SubsurfaceScattering.h"
 #include "Features/TerrainBlending.h"
@@ -354,11 +355,16 @@ void Deferred::DeferredPasses()
 
 	auto& ibl = globals::features::ibl;
 
+	// Reflections need the lit diffuse and specular, and are blended in by the composite below
+	auto& trueSSR = globals::features::trueSSR;
+	if (trueSSR.loaded && dynamicCubemaps.loaded)
+		trueSSR.Draw(Util::GetCurrentSceneDepthSRV(false), normalRoughness.SRV, reflectance.SRV, main.SRV, specular.SRV);
+
 	// Deferred Composite
 	{
 		TracyD3D11Zone(globals::state->tracyCtx, "Deferred Composite");
 
-		ID3D11ShaderResourceView* srvs[16]{
+		ID3D11ShaderResourceView* srvs[17]{
 			specular.SRV,                                                                                   // t0  SpecularTexture
 			albedo.SRV,                                                                                     // t1  AlbedoTexture
 			normalRoughness.SRV,                                                                            // t2  NormalRoughnessTexture
@@ -375,6 +381,7 @@ void Deferred::DeferredPasses()
 			ssgi_hq_spec ? ssgi_gi_spec : nullptr,                                                          // t13 SsgiSpecularTexture
 			ibl.loaded ? ibl.envIBLTexture->srv.get() : nullptr,                                            // t14 EnvIBLTexture
 			ibl.loaded ? ibl.skyIBLTexture->srv.get() : nullptr,                                            // t15 SkyIBLTexture
+			trueSSR.loaded ? trueSSR.GetOutputSRV() : nullptr,                                              // t16 TrueSSRTexture
 		};
 
 		if (dynamicCubemaps.loaded)
@@ -398,7 +405,7 @@ void Deferred::DeferredPasses()
 
 	// Clear
 	{
-		ID3D11ShaderResourceView* views[16]{ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+		ID3D11ShaderResourceView* views[17]{};
 		context->CSSetShaderResources(0, ARRAYSIZE(views), views);
 
 		ID3D11UnorderedAccessView* uavs[3]{ nullptr, nullptr, nullptr };
@@ -612,6 +619,9 @@ ID3D11ComputeShader* Deferred::GetComputeMainComposite()
 		if (globals::features::screenSpaceGI.loaded)
 			defines.push_back({ "SSGI", nullptr });
 
+		if (globals::features::trueSSR.loaded)
+			defines.push_back({ "TRUE_SSR", nullptr });
+
 		if (globals::features::ibl.loaded)
 			defines.push_back({ "IBL", nullptr });
 
@@ -638,6 +648,9 @@ ID3D11ComputeShader* Deferred::GetComputeMainCompositeInterior()
 
 		if (globals::features::screenSpaceGI.loaded)
 			defines.push_back({ "SSGI", nullptr });
+
+		if (globals::features::trueSSR.loaded)
+			defines.push_back({ "TRUE_SSR", nullptr });
 
 		if (globals::features::ibl.loaded)
 			defines.push_back({ "IBL", nullptr });

@@ -25,6 +25,7 @@
 #include "Features/PostProcessing.h"
 #include "Features/RainRefraction.h"
 #include "Features/VanillaEnhancer.h"
+#include "Features/TrueSSR.h"
 #include "Features/RemoteControl.h"
 #include "Features/RenderDoc.h"
 #include "Features/ScreenSpaceGI.h"
@@ -77,6 +78,7 @@ namespace globals
 		InteriorSun interiorSun{};
 		RainRefraction rainRefraction{};
 		VanillaEnhancer vanillaEnhancer{};
+		TrueSSR trueSSR{};
 		ScreenSpaceGI screenSpaceGI{};
 		ScreenSpaceShadows screenSpaceShadows{};
 		Skylighting skylighting{};

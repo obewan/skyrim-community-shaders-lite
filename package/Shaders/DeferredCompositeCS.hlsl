@@ -31,6 +31,11 @@ TextureCube<float3> EnvTexture : register(t6);
 TextureCube<float3> EnvReflectionsTexture : register(t7);
 
 SamplerState LinearSampler : register(s0);
+
+#	if defined(TRUE_SSR)
+// rgb = reflected radiance (linear), a = confidence; half or full resolution, null when the pass is off
+Texture2D<float4> TrueSSRTexture : register(t16);
+#	endif
 #endif
 
 #if defined(SKYLIGHTING)
@@ -290,6 +295,13 @@ void SampleSSGISpecular(uint2 pixCoord, sh2 lobe, inout float ao, out float3 il,
 		}
 
 		finalIrradiance += ssgiIlSpecular;
+#	endif
+
+#	if defined(TRUE_SSR)
+		// Screen-space hits replace the environment lookup where they are confident; the output
+		// covers the same buffer layout at full or half size, so buffer UVs address it directly.
+		const float4 trueSSR = TrueSSRTexture.SampleLevel(LinearSampler, (dispatchID.xy + 0.5) * SharedData::BufferDim.zw, 0);
+		finalIrradiance = lerp(finalIrradiance, trueSSR.rgb, saturate(trueSSR.a));
 #	endif
 
 		color += reflectance * finalIrradiance;
