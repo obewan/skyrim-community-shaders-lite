@@ -296,7 +296,27 @@ struct TonemapperInfo
 					ImGui::SliderFloat(T(TKEY("white_clip"), "White Clip"), &params[0].y, 1.f, 500.f, "%.2f");
 					drawHDRStatus();
 				},
-				{ f4{ 1.f, 100.f, 0.f, 0.f } } }
+				{ f4{ 1.f, 100.f, 0.f, 0.f } } },
+
+			{ "Reinhard Extended (Per Channel)"sv, "ReinhardExtPerChannel"sv,
+				T(TKEY("tonemapper.reinhard_extended_per_channel.description"),
+					"Extended Reinhard applied to each colour channel, as in ReShade TrueLight. "
+					"Unlike Reinhard Extended, which keeps hue, bright saturated colours roll off toward white the way film does."),
+				0, 0, false, 0, 0,
+				[](CTP& params) {
+					exposureSlider(&params[0].x);
+					ImGui::SliderFloat(T(TKEY("white_point"), "White Point"), &params[0].y, 1.f, 16.f, "%.2f"); },
+				{ f4{ 1.f, 4.f, 0.f, 0.f } } },
+
+			{ "Hable (Uncharted 2)"sv, "HableFilmic"sv,
+				T(TKEY("tonemapper.hable_filmic.description"),
+					"Filmic curve by John Hable, from his GDC 2010 talk \"Uncharted 2: HDR Lighting\". "
+					"A toe and shoulder give cinematic contrast; the White Point shifts the whole curve."),
+				0, 0, false, 0, 0,
+				[](CTP& params) {
+					exposureSlider(&params[0].x);
+					ImGui::SliderFloat(T(TKEY("white_point"), "White Point"), &params[0].y, 1.f, 16.f, "%.2f"); },
+				{ f4{ 1.f, 4.f, 0.f, 0.f } } }
 		};
 
 		static std::once_flag flag;

@@ -317,6 +317,29 @@ float3 ReinhardExt(float3 val)
 	return val;
 }
 
+// Extended Reinhard mapped per channel, as in ReShade TrueLight. Unlike ReinhardExt, which maps
+// luminance and keeps hue, bright saturated colours roll off toward white the way film does.
+float3 ReinhardExtPerChannel(float3 val)
+{
+	val *= tonemapParams[0].x;
+	const float whiteSquared = tonemapParams[0].y * tonemapParams[0].y;
+	return saturate(val * (1 + val / whiteSquared) / (1 + val));
+}
+
+float3 HableCurve(float3 x)
+{
+	const float A = 0.15, B = 0.50, C = 0.10, D = 0.20, E = 0.02, F = 0.30;
+	return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
+}
+
+// John Hable's Uncharted 2 filmic curve, with the exposure bias of 2 from his GDC 2010 talk
+// "Uncharted 2: HDR Lighting", normalized so the white point maps to 1.
+float3 HableFilmic(float3 val)
+{
+	val *= tonemapParams[0].x;
+	return saturate(HableCurve(val * 2.0) / HableCurve(tonemapParams[0].y.xxx));
+}
+
 float3 HejlBurgessDawsonFilmic(float3 val)
 {
 	val *= tonemapParams[0].x;
