@@ -40,6 +40,7 @@
 #include "Features/TerrainShadows.h"
 #include "Features/TerrainVariation.h"
 #include "Features/TrueSSR.h"
+#include "Features/TrueClouds.h"
 #include "Features/TrueMist.h"
 #include "Features/TrueMountains.h"
 #include "Features/TrueSnow.h"
@@ -89,6 +90,7 @@ namespace globals
 		TrueSnow trueSnow{};
 		TrueMountains trueMountains{};
 		TrueMist trueMist{};
+		TrueClouds trueClouds{};
 		TrueSun trueSun{};
 		ScreenSpaceGI screenSpaceGI{};
 		ScreenSpaceShadows screenSpaceShadows{};

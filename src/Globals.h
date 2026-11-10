@@ -23,6 +23,7 @@ struct TrueSSR;
 struct TrueSnow;
 struct TrueMountains;
 struct TrueMist;
+struct TrueClouds;
 struct TrueSun;
 struct ScreenSpaceGI;
 struct ScreenSpaceShadows;
@@ -122,6 +123,7 @@ namespace globals
 		extern TrueSnow trueSnow;
 		extern TrueMountains trueMountains;
 		extern TrueMist trueMist;
+		extern TrueClouds trueClouds;
 		extern TrueSun trueSun;
 		extern ScreenSpaceGI screenSpaceGI;
 		extern ScreenSpaceShadows screenSpaceShadows;

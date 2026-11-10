@@ -271,6 +271,11 @@ cbuffer AlphaTestRefCB : register(b11)
 #		include "TrueSun/TrueSun.hlsli"
 #	endif
 
+#	if defined(TRUE_CLOUDS) && defined(CLOUDS) && !defined(OCCLUSION)
+#		define TRUE_CLOUDS_ACTIVE
+#		include "TrueClouds/TrueClouds.hlsli"
+#	endif
+
 Texture2D<float> TexDepthSampler : register(t17);
 
 #	if defined(EFFECTS11) && defined(HORIZFADE)
@@ -514,6 +519,12 @@ PS_OUTPUT main(PS_INPUT input)
 
 	psout.Color.w = input.Color.w * baseColor.w;
 	psout.Color.xyz = input.Color.xyz * baseColor.xyz + skyScale;
+
+#			if defined(TRUE_CLOUDS_ACTIVE)
+	// Light inside the cloud layer: the texture's opacity stands in for thickness
+	[branch] if (TrueClouds::IsOn() && !SharedData::InInterior)
+		psout.Color.xyz = TrueClouds::Shade(psout.Color.xyz, saturate(baseColor.w), normalize(input.WorldPosition.xyz), TrueClouds::GetSettings());
+#			endif
 
 #			if defined(EFFECTS11_PROCEDURAL_SUN)
 	[branch] if (proceduralSunActive)
