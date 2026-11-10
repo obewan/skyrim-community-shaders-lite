@@ -51,8 +51,8 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 #endif
 	InitializeLog();
 	SKSE::Init(a_skse);
-	logger::info("{} {}", Plugin::PRODUCT_NAME, Plugin::VERSION.string());
-	if (Plugin::BUILD_DESCRIBE != std::format("v{}", Util::GetFormattedVersion(Plugin::VERSION)))
+	logger::info("{} {} (Community Shaders {})", Plugin::PRODUCT_NAME, Plugin::PRODUCT_VERSION, Util::GetFormattedVersion(Plugin::VERSION));
+	if (Plugin::BUILD_DESCRIBE != std::format("v{}", Plugin::PRODUCT_VERSION))
 		logger::info("Build {}", Util::GetBuildLabel());
 	SKSE::AllocTrampoline(1 << 10);
 	return Load();

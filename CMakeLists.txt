@@ -84,6 +84,13 @@ set(PRODUCT_NAME "Imnot Shaders")
 set(PACKAGE_BASENAME "ImnotShaders")
 message("\tProduct name: ${PRODUCT_NAME}")
 
+# The version shown to users and used for release tags. The project VERSION
+# above stays on the Community Shaders release this is built from: it is the
+# version SKSE reports to other mods and the one presets compare against their
+# required Community Shaders version.
+set(PRODUCT_VERSION "1.0.0")
+message("\tProduct version: ${PRODUCT_VERSION} (Community Shaders ${PROJECT_VERSION})")
+
 # #######################################################################################################################
 # # Build version info from git
 # #######################################################################################################################

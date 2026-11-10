@@ -54,7 +54,7 @@ void HomePageRenderer::RenderWelcomeSection()
 	}
 
 	ImVec2 windowSize = ImGui::GetWindowSize();
-	auto versionStr = Util::GetFormattedVersion(Plugin::VERSION);
+	auto versionStr = std::string(Plugin::PRODUCT_VERSION);
 	auto expectedTag = std::format("v{}", versionStr);
 	auto* i18n = I18n::GetSingleton();
 	std::string titleWithVersion = i18n->Format("menu.home.welcome", { { "name", std::string(Plugin::PRODUCT_NAME) }, { "version", versionStr } }, "Welcome to {name} {version}");

@@ -26,7 +26,7 @@ void MenuHeaderRenderer::RenderHeader(bool isDocked, bool showLogo, bool canShow
 		return;
 	}
 
-	auto versionStr = Util::GetFormattedVersion(Plugin::VERSION);
+	auto versionStr = std::string(Plugin::PRODUCT_VERSION);
 	auto expectedTag = std::format("v{}", versionStr);
 	auto title = std::format("{} {}", Plugin::PRODUCT_NAME, versionStr);
 	auto actionIcons = BuildActionIcons(canShowIcons, uiIcons);

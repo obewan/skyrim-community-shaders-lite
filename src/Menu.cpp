@@ -773,7 +773,7 @@ void Menu::DrawSettings()
 	ImGui::SetNextWindowPos(Util::GetNativeViewportSizeScaled(0.5f), layoutCond, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(Util::GetNativeViewportSizeScaled(0.8f), layoutCond);
 	resetLayout = false;
-	auto versionStr = Util::GetFormattedVersion(Plugin::VERSION);
+	auto versionStr = std::string(Plugin::PRODUCT_VERSION);
 	auto expectedTag = std::format("v{}", versionStr);
 	auto displayTitle = Plugin::BUILD_DESCRIBE == expectedTag ? I18n::GetSingleton()->Format("menu.window_title", { { "name", std::string(Plugin::PRODUCT_NAME) }, { "version", versionStr } }, "{name} {version}") : I18n::GetSingleton()->Format("menu.window_title_dev", { { "name", std::string(Plugin::PRODUCT_NAME) }, { "version", versionStr }, { "build", Util::GetBuildLabel() } }, "{name} {version} {build}");
 	// Use ### to keep a stable window ID regardless of build suffix, preserving docking state

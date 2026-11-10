@@ -21,8 +21,12 @@ namespace Plugin
 	/// Product name shown to users, e.g. in the menu title and startup log line.
 	inline constexpr auto PRODUCT_NAME = "@PRODUCT_NAME@"sv;
 
-	/// Full git describe string, e.g. "v1.4.11", "v1.4.11-3-gabcdef1", "v1.4.11-3-gabcdef1-dirty".
-	/// Matches "v{VERSION}" exactly on a clean tagged release build.
+	/// Product version shown to users, e.g. "1.0.0". VERSION stays on the Community Shaders
+	/// release this build is based on, for SKSE, presets and other compatibility checks.
+	inline constexpr auto PRODUCT_VERSION = "@PRODUCT_VERSION@"sv;
+
+	/// Full git describe string, e.g. "v1.0.0", "v1.0.0-3-gabcdef1", "v1.0.0-3-gabcdef1-dirty".
+	/// Matches "v{PRODUCT_VERSION}" exactly on a clean tagged release build.
 	inline constexpr auto BUILD_DESCRIBE = "@GIT_DESCRIBE@"sv;
 
 	/// Build branch, "*" for local (non-CI) builds; empty when detached.
