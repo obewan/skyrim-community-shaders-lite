@@ -1,0 +1,6 @@
+{
+  "_metadata": {
+    "description": "Height fog on: valleys and distant mountains get depth and the sun colour scatters in the air. Volumetric fog stays off (an optional, heavier mode)."
+  },
+  "enabled": true
+}
