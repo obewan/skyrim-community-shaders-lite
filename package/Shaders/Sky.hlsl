@@ -217,6 +217,10 @@ cbuffer AlphaTestRefCB : register(b11)
 #		include "HDRDisplay/HDRSun.hlsli"
 #	endif
 
+#	if defined(TRUE_SUN) && defined(TEX) && !defined(CLOUDS) && !defined(MOONMASK)
+#		include "TrueSun/TrueSun.hlsli"
+#	endif
+
 Texture2D<float> TexDepthSampler : register(t17);
 
 #	if defined(EFFECTS11) && defined(HORIZFADE)
@@ -298,6 +302,16 @@ PS_OUTPUT main(PS_INPUT input)
 	baseColor = PParams.xxxx * (-baseColor + blendColor) + baseColor;
 #		endif
 
+#		if defined(TRUE_SUN) && defined(TEX) && !defined(DITHER) && !defined(CLOUDS) && !defined(MOONMASK)
+	// Replace the vanilla sun texture; the weather's sun colour and visibility still apply below
+	[branch] if (TrueSun::IsOn() && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsSun))
+	{
+		baseColor = float4(TrueSun::Shade(input.TexCoord0.xy, normalize(input.WorldPosition.xyz)), 1.0);
+		// The vanilla texture's alpha hid the flat sky term outside its disk; the opaque quad would show it as a bright rectangle
+		skyScale = 0.0;
+	}
+#		endif
+
 #		if defined(HDR_OUTPUT)
 	float hdrSunGain = HDRSun::GetHdrSunGain(input.TexCoord0.xy, baseColor);
 	baseColor.xyz *= hdrSunGain;
@@ -320,6 +334,11 @@ PS_OUTPUT main(PS_INPUT input)
 	psout.Color.xyz = input.Color.xyz * baseColor.xyz + skyScale;
 	psout.Color.xyz *= 1.0 + noiseGrad;
 	psout.Color.w = baseColor.w * input.Color.w;
+#				if defined(TRUE_SUN)
+	// The glare is the same sunlight seen through the same air as the disk
+	[branch] if (TrueSun::IsOn() && (Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::IsSun))
+		psout.Color.xyz *= TrueSun::Extinction(normalize(input.WorldPosition.xyz)) * SharedData::trueSunSettings.GlareIntensity;
+#				endif
 #			else
 	float3 skyGradientColor = input.Color.xyz;
 

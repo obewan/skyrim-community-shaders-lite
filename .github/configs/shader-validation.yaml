@@ -92,6 +92,7 @@ file_common_defines:
             - CLOUD_SHADOWS
             - WATER_EFFECTS
             - SSS
+            - TRUE_SUN
         VSHADER:
             - IBL
             - SCREEN_SPACE_SHADOWS
@@ -2186,6 +2187,7 @@ shaders:
                   - CLOUD_SHADOWS
                   - WATER_EFFECTS
                   - SSS
+                  - TRUE_SUN
               entries:
                   - entry: Sky:Pixel:8
                     defines:

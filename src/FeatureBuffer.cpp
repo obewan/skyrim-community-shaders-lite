@@ -23,6 +23,7 @@
 #include "Features/TerrainVariation.h"
 #include "Features/TrueSSR.h"
 #include "Features/TrueSnow.h"
+#include "Features/TrueSun.h"
 #include "Features/VanillaEnhancer.h"
 #include "Features/WetnessEffects.h"
 #include "TruePBR.h"
@@ -72,5 +73,6 @@ std::pair<unsigned char*, size_t> GetFeatureBufferData(bool a_inWorld)
 		globals::features::rainRefraction.GetCommonBufferData(),
 		globals::features::vanillaEnhancer.settings,
 		globals::features::trueSSR.GetCommonBufferData(),
-		globals::features::trueSnow.settings);
+		globals::features::trueSnow.settings,
+		globals::features::trueSun.settings);
 }

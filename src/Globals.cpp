@@ -24,9 +24,6 @@
 #include "Features/PerformanceOverlay.h"
 #include "Features/PostProcessing.h"
 #include "Features/RainRefraction.h"
-#include "Features/VanillaEnhancer.h"
-#include "Features/TrueSSR.h"
-#include "Features/TrueSnow.h"
 #include "Features/RemoteControl.h"
 #include "Features/RenderDoc.h"
 #include "Features/ScreenSpaceGI.h"
@@ -40,8 +37,12 @@
 #include "Features/TerrainHelper.h"
 #include "Features/TerrainShadows.h"
 #include "Features/TerrainVariation.h"
+#include "Features/TrueSSR.h"
+#include "Features/TrueSnow.h"
+#include "Features/TrueSun.h"
 #include "Features/UnifiedWater.h"
 #include "Features/Upscaling.h"
+#include "Features/VanillaEnhancer.h"
 #include "Features/VolumetricLighting.h"
 #include "Features/VolumetricShadows.h"
 #include "Features/WaterEffects.h"
@@ -81,6 +82,7 @@ namespace globals
 		VanillaEnhancer vanillaEnhancer{};
 		TrueSSR trueSSR{};
 		TrueSnow trueSnow{};
+		TrueSun trueSun{};
 		ScreenSpaceGI screenSpaceGI{};
 		ScreenSpaceShadows screenSpaceShadows{};
 		Skylighting skylighting{};

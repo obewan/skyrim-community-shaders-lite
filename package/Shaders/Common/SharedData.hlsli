@@ -504,6 +504,18 @@ namespace SharedData
 		uint DebugView;
 	};
 
+	struct TrueSunSettings
+	{
+		uint Enabled;
+		float Size;
+		float Intensity;
+		float GlowIntensity;
+		float GlowSize;
+		float Reddening;
+		float GlareIntensity;
+		float pad0;
+	};
+
 	struct TrueSSRSettings
 	{
 		float ReflectionStrength;
@@ -538,6 +550,7 @@ namespace SharedData
 		VanillaEnhancerSettings vanillaEnhancerSettings;
 		TrueSSRSettings trueSSRSettings;
 		TrueSnowSettings trueSnowSettings;
+		TrueSunSettings trueSunSettings;
 	};
 
 	Texture2D<float4> DepthTexture : register(t17);
