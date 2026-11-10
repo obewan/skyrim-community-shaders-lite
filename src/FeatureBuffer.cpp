@@ -2,6 +2,8 @@
 
 #include <array>
 
+#include "FeatureSpareSlots.h"
+
 #include "Features/CloudShadows.h"
 #include "Features/DynamicCubemaps.h"
 #include "Features/Effects11.h"
@@ -47,6 +49,21 @@ std::pair<unsigned char*, size_t> _GetFeatureBufferData(Ts... feat_datas)
 	return std::make_pair(storage.data(), storage.size());
 }
 
+namespace
+{
+	/// Features whose settings live in the spare slots, one entry each: { short name, first slot, SlotsFor<Settings>() }.
+	/// Moving a feature into or out of the block changes shader code, so batch such moves.
+	constexpr std::array<FeatureSpareSlots::Claim, 0> spareClaims{};
+	static_assert(FeatureSpareSlots::ClaimsValid(spareClaims), "Spare-slot claims overlap or overflow the block");
+
+	/// Fills the spare slots; each claim above gets a matching FeatureSpareSlots::Write here.
+	FeatureSpareSlots::Block GetSpareSlotData()
+	{
+		FeatureSpareSlots::Block block{};
+		return block;
+	}
+}
+
 std::pair<unsigned char*, size_t> GetFeatureBufferData(bool a_inWorld)
 {
 	return _GetFeatureBufferData(
@@ -74,5 +91,6 @@ std::pair<unsigned char*, size_t> GetFeatureBufferData(bool a_inWorld)
 		globals::features::vanillaEnhancer.settings,
 		globals::features::trueSSR.GetCommonBufferData(),
 		globals::features::trueSnow.settings,
-		globals::features::trueSun.settings);
+		globals::features::trueSun.settings,
+		GetSpareSlotData());
 }

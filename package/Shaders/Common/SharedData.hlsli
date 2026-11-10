@@ -524,6 +524,12 @@ namespace SharedData
 		float pad0;
 	};
 
+	// Spare settings slots for new features. Every shader includes this file, so adding a
+	// settings struct here recompiles every permutation; a feature in the spare slots unpacks
+	// its settings from SpareSlots in its own .hlsli instead. Must match FeatureSpareSlots::Count
+	// (src/FeatureSpareSlots.h). Guide: docs/new-feature-template/NewFeatureReadme.md.
+#define SHARED_DATA_SPARE_SLOT_COUNT 32
+
 	cbuffer FeatureData : register(b6)
 	{
 		GrassLightingSettings grassLightingSettings;
@@ -551,6 +557,7 @@ namespace SharedData
 		TrueSSRSettings trueSSRSettings;
 		TrueSnowSettings trueSnowSettings;
 		TrueSunSettings trueSunSettings;
+		float4 SpareSlots[SHARED_DATA_SPARE_SLOT_COUNT];
 	};
 
 	Texture2D<float4> DepthTexture : register(t17);
