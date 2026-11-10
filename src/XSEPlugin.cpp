@@ -53,8 +53,11 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	// No CommonLib logger: it would replace ours with one named after the plugin (CommunityShaders.log)
 	SKSE::Init(a_skse, false);
 	logger::info("{} {} (Community Shaders {})", Plugin::PRODUCT_NAME, Plugin::PRODUCT_VERSION, Util::GetFormattedVersion(Plugin::VERSION));
-	if (Plugin::BUILD_DESCRIBE != std::format("v{}", Plugin::PRODUCT_VERSION))
-		logger::info("Build {}", Util::GetBuildLabel());
+	logger::info("Build branch: {} | describe: {} | hash: {}{}",
+		Plugin::BUILD_BRANCH.empty() ? "(detached)" : Plugin::BUILD_BRANCH,
+		Plugin::BUILD_DESCRIBE,
+		Plugin::BUILD_HASH.empty() ? "unknown" : Plugin::BUILD_HASH,
+		Plugin::BUILD_DIRTY ? " (dirty)" : "");
 	SKSE::AllocTrampoline(1 << 10);
 	return Load();
 }

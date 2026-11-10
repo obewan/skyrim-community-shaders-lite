@@ -59,6 +59,7 @@ struct IndirectLobeWeights
 };
 
 #if defined(TRUE_PBR)
+#	include "Common/PBRMath.hlsli"
 #	if defined(GLINT)
 #		include "Common/Glints/Glints2023.hlsli"
 #	else
@@ -83,13 +84,14 @@ struct MaterialProperties
 	float3 backLightColor;
 	float Roughness;
 	float3 F0;
+	// The PBR evaluators read AO, so every layout has it; Lighting.hlsl defaults it to 1.
+	float AO;
 #	if defined(CS_SKIN_SHADING)
 	float RoughnessSecondary;
 	float SecondarySpecIntensity;
 	float Curvature;
 	float Thickness;
 	float3 SubsurfaceColor;
-	float AO;
 	float FuzzRoughness;
 	float3 FuzzColor;
 	float FuzzWeight;
@@ -109,12 +111,14 @@ struct MaterialProperties
 	float3 CoatF0;
 	float3 FuzzColor;
 	float FuzzWeight;
+	float FuzzRoughness;
 	float GlintScreenSpaceScale;
 	float GlintLogMicrofacetDensity;
 	float GlintMicrofacetRoughness;
 	float GlintDensityRandomization;
 	Glints::GlintCachedVars GlintCache;
 	float Noise;
+	PBR::FuzzLayer Fuzz;
 #endif
 };
 
