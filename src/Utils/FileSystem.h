@@ -232,7 +232,7 @@ namespace Util
 
 		/**
 		 * Returns the path to the Community Shaders log file in the default SKSE logging folder.
-		 * @return Documents / "My Games" / "Skyrim..." / "SKSE" / "CommunityShaders.log"
+		 * @return Documents / "My Games" / "Skyrim..." / "SKSE" / "ImnotShaders.log" (Plugin::LOG_NAME)
 		 */
 		std::filesystem::path GetLogPath();
 

@@ -41,7 +41,7 @@ namespace
 	{
 		if (failed) {
 			ImGui::TextColored(themeSettings.StatusPalette.Error,
-				"ERROR: %llu shaders failed to compile. Check installation and CommunityShaders.log",
+				"ERROR: %llu shaders failed to compile. Check installation and ImnotShaders.log",
 				static_cast<unsigned long long>(failed));
 
 			if (FeatureIssues::HasPotentialShaderModifyingFeatures()) {

@@ -26,7 +26,7 @@ void InitializeLog([[maybe_unused]] spdlog::level::level_enum a_level = spdlog::
 		util::report_and_fail("Failed to find standard logging directory"sv);
 	}
 
-	*path /= std::format("{}.log"sv, Plugin::NAME);
+	*path /= std::format("{}.log"sv, Plugin::LOG_NAME);
 	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
 #endif
 
@@ -50,7 +50,8 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	while (!REX::W32::IsDebuggerPresent()) {};
 #endif
 	InitializeLog();
-	SKSE::Init(a_skse);
+	// No CommonLib logger: it would replace ours with one named after the plugin (CommunityShaders.log)
+	SKSE::Init(a_skse, false);
 	logger::info("{} {} (Community Shaders {})", Plugin::PRODUCT_NAME, Plugin::PRODUCT_VERSION, Util::GetFormattedVersion(Plugin::VERSION));
 	if (Plugin::BUILD_DESCRIBE != std::format("v{}", Plugin::PRODUCT_VERSION))
 		logger::info("Build {}", Util::GetBuildLabel());

@@ -15,8 +15,11 @@ namespace Plugin
 		// clang-format on
 	};
 
-	/// Runtime identity: DLL, log and data-path name. Not the product name users see.
+	/// Runtime identity: SKSE plugin and data-path name. Not the product name users see.
 	inline constexpr auto NAME = "@PROJECT_NAME@"sv;
+
+	/// Log file name (without ".log"), matching the DLL name users see in their install.
+	inline constexpr auto LOG_NAME = "@PACKAGE_BASENAME@"sv;
 
 	/// Product name shown to users, e.g. in the menu title and startup log line.
 	inline constexpr auto PRODUCT_NAME = "@PRODUCT_NAME@"sv;

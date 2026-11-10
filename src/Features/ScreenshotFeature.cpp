@@ -959,7 +959,7 @@ void ScreenshotFeature::ScreenshotWorkerLoop()
 		}
 
 		if (!saveOk) {
-			ShowInGameNotification("Screenshot failed - see CommunityShaders.log");
+			ShowInGameNotification("Screenshot failed - see ImnotShaders.log");
 		} else {
 			logger::info("Saved screenshot to {}", screenshot.outputPath.string());
 			ShowInGameNotification(std::format("Screenshot saved: {}",
