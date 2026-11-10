@@ -387,7 +387,8 @@ public:
 		THLand5HasDisplacement = 1 << 5,
 		ETMaterialModel = 0b111 << 6,
 		THLandHasDisplacement = 1 << 9,
-		TVMeshVariation = 1 << 10
+		TVMeshVariation = 1 << 10,
+		TMRock = 1 << 11  ///< True Mountains rock surface; mirrored as TrueMountains::RockFlag in HLSL
 	};
 
 	bool inWorld = false;

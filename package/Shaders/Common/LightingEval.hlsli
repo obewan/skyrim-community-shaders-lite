@@ -16,6 +16,13 @@
 #if defined(TRUE_SNOW) && defined(LIGHTING)
 #	include "TrueSnow/TrueSnow.hlsli"
 #endif
+// True Mountains only touches unskinned, non-landscape, non-LOD pixel shaders (vanilla rock uses
+// model-space normal maps): in every other permutation the preprocessed source stays identical, so
+// the shader store reuses it.
+#if defined(TRUE_MOUNTAINS) && defined(LIGHTING) && defined(PSHADER) && !defined(LANDSCAPE) && !defined(SKINNED) && !defined(LOD) && !defined(LODLANDNOISE) && !defined(WORLD_MAP)
+#	define TRUE_MOUNTAINS_ACTIVE
+#	include "TrueMountains/TrueMountains.hlsli"
+#endif
 
 #if defined(TRUE_PBR)
 DirectContext CreateDirectLightingContext(float3 worldNormal, float3 coatWorldNormal, float3 vertexNormal, float3 viewDir, float3 coatViewDir, float3 lightDir, float3 coatLightDir, float3 lightColor, float detailedShadow, float softShadow)

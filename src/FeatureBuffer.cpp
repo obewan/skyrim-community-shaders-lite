@@ -23,6 +23,7 @@
 #include "Features/TerrainBlending.h"
 #include "Features/TerrainShadows.h"
 #include "Features/TerrainVariation.h"
+#include "Features/TrueMountains.h"
 #include "Features/TrueSSR.h"
 #include "Features/TrueSnow.h"
 #include "Features/TrueSun.h"
@@ -53,13 +54,16 @@ namespace
 {
 	/// Features whose settings live in the spare slots, one entry each: { short name, first slot, SlotsFor<Settings>() }.
 	/// Moving a feature into or out of the block changes shader code, so batch such moves.
-	constexpr std::array<FeatureSpareSlots::Claim, 0> spareClaims{};
+	constexpr std::array<FeatureSpareSlots::Claim, 1> spareClaims{ {
+		{ "TrueMountains", TrueMountains::SpareSlot, FeatureSpareSlots::SlotsFor<TrueMountains::Settings>() },
+	} };
 	static_assert(FeatureSpareSlots::ClaimsValid(spareClaims), "Spare-slot claims overlap or overflow the block");
 
 	/// Fills the spare slots; each claim above gets a matching FeatureSpareSlots::Write here.
 	FeatureSpareSlots::Block GetSpareSlotData()
 	{
 		FeatureSpareSlots::Block block{};
+		FeatureSpareSlots::Write(block, TrueMountains::SpareSlot, globals::features::trueMountains.settings);
 		return block;
 	}
 }

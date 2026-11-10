@@ -38,6 +38,7 @@
 #include "Features/TerrainShadows.h"
 #include "Features/TerrainVariation.h"
 #include "Features/TrueSSR.h"
+#include "Features/TrueMountains.h"
 #include "Features/TrueSnow.h"
 #include "Features/TrueSun.h"
 #include "Features/UnifiedWater.h"
@@ -82,6 +83,7 @@ namespace globals
 		VanillaEnhancer vanillaEnhancer{};
 		TrueSSR trueSSR{};
 		TrueSnow trueSnow{};
+		TrueMountains trueMountains{};
 		TrueSun trueSun{};
 		ScreenSpaceGI screenSpaceGI{};
 		ScreenSpaceShadows screenSpaceShadows{};

@@ -20,6 +20,7 @@ struct RainRefraction;
 struct VanillaEnhancer;
 struct TrueSSR;
 struct TrueSnow;
+struct TrueMountains;
 struct TrueSun;
 struct ScreenSpaceGI;
 struct ScreenSpaceShadows;
@@ -115,6 +116,7 @@ namespace globals
 		extern VanillaEnhancer vanillaEnhancer;
 		extern TrueSSR trueSSR;
 		extern TrueSnow trueSnow;
+		extern TrueMountains trueMountains;
 		extern TrueSun trueSun;
 		extern ScreenSpaceGI screenSpaceGI;
 		extern ScreenSpaceShadows screenSpaceShadows;

@@ -1998,6 +1998,34 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 		baseColor.xyz = saturate(float3(trueSnowLand + trueSnowObject, trueSnowProjected + trueSnowObject, trueSnowSparkle));
 #	endif
 
+#	if defined(TRUE_MOUNTAINS_ACTIVE)
+	// Rock surfaces flagged per draw: guessed-height relief shadows, cavities, contrast and tint.
+	// Snow lying on the rock keeps its own shading.
+	float trueMountainsShadow = 1.0;
+	float trueMountainsCavityAO = 1.0;
+	[branch] if (TrueMountains::IsRock())
+	{
+		const TrueMountains::Settings trueMountainsSettings = TrueMountains::GetSettings();
+		const TrueMountains::Surface trueMountainsSurface = TrueMountains::GetSurface(TexColorSampler, SampColorSampler, diffuseUv);
+#		if defined(TRUE_SNOW)
+		const float trueMountainsWeight = 1.0 - trueSnowMask;
+#		else
+		const float trueMountainsWeight = 1.0;
+#		endif
+		float rockCavityAO;
+		const float3 rockAlbedo = TrueMountains::AdjustAlbedo(baseColor.xyz, trueMountainsSurface, input.WorldPosition.xyz, trueMountainsSettings, rockCavityAO);
+		baseColor.xyz = lerp(baseColor.xyz, rockAlbedo, trueMountainsWeight);
+		trueMountainsCavityAO = lerp(1.0, rockCavityAO, trueMountainsWeight);
+		// Tangent frame along the diffuse UVs, for tangent-space and model-space normal maps alike
+		const float3 trueMountainsLightTS = mul(ReconstructTBN(input.WorldPosition.xyz, worldNormal, diffuseUv), DirLightDirection.xyz);
+		[branch] if (inWorld)
+			trueMountainsShadow = lerp(1.0, TrueMountains::ReliefShadow(TexColorSampler, SampColorSampler, diffuseUv, trueMountainsSurface, trueMountainsLightTS, screenNoise, trueMountainsSettings), trueMountainsWeight);
+		// Debug view: detected rock in red, darkened by its relief shadows
+		if (trueMountainsSettings.DebugView)
+			baseColor.xyz = float3(1.0, 0.0, 0.0) * lerp(0.2, 1.0, trueMountainsShadow);
+	}
+#	endif
+
 	MaterialProperties material = (MaterialProperties)0;
 #	if defined(TRUE_SNOW)
 	material.SnowMask = trueSnowMask;
@@ -2505,6 +2533,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 	}
 #	endif  // defined(EMAT) && (defined(SKINNED) || !defined(MODELSPACENORMALS))
 
+#	if defined(TRUE_MOUNTAINS_ACTIVE)
+	dirDetailedShadow *= trueMountainsShadow;
+#	endif
+
 #	if defined(CS_HAIR_SHADING)
 	if (SharedData::hairSpecularSettings.Enabled) {
 		vertexNormal.xyz = worldNormal.xyz;
@@ -2860,6 +2892,10 @@ PS_OUTPUT main(PS_INPUT input, bool frontFace : SV_IsFrontFace)
 
 #	if defined(TRUE_SNOW)
 	directionalAmbientColor *= 1 + TrueSnow::ShadeLift(material.SnowMask);
+#	endif
+
+#	if defined(TRUE_MOUNTAINS_ACTIVE)
+	directionalAmbientColor *= trueMountainsCavityAO;
 #	endif
 
 #	if defined(LANDSCAPE)
