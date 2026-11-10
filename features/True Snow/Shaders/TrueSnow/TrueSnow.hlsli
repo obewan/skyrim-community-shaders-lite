@@ -82,7 +82,7 @@ namespace TrueSnow
 		const float luma = max(dot(albedo, float3(0.2126, 0.7152, 0.0722)), 1e-3);
 		const float3 neutral = lerp(luma.xxx, albedo, Saturation);
 		const float target = min(TargetLuma * SharedData::trueSnowSettings.Brightness, MaxAlbedo);
-		const float lift = pow(target / luma, 1 - DetailKept);
+		const float lift = pow(max(target / luma, 0.0), 1 - DetailKept);
 		const float3 snow = min(neutral * lift * float3(0.96, 0.98, 1.0), MaxAlbedo);
 		return lerp(albedo, snow, snowMask);
 	}
