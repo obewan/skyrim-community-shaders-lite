@@ -75,7 +75,7 @@ message("\tNsight Perf: ${NVPERF_SUPPORT}")
 
 # The product name shown to users, and the basename for everything written to
 # dist/. Deliberately decoupled from PROJECT_NAME, which is the runtime
-# identity: it feeds the DLL and log filenames, Plugin::NAME and the
+# identity: it feeds the log filename, Plugin::NAME and the
 # CommunityShaders data paths that separately installed Community Shaders
 # addons resolve against. Renaming that would break those addons and orphan
 # existing user settings and shader caches. The product is renamed; the
@@ -123,6 +123,14 @@ message("\tBuild branch: ${GIT_BRANCH}")
 # # Add CMake features
 # #######################################################################################################################
 include(XSEPlugin)
+
+# Only the DLL and PDB file names carry the product name. The target keeps
+# PROJECT_NAME, so Plugin::NAME (the SKSE plugin name addons look up), the log
+# and the CommunityShaders data paths stay unchanged.
+set_target_properties(
+    ${PROJECT_NAME}
+    PROPERTIES OUTPUT_NAME "${PACKAGE_BASENAME}"
+)
 
 # #######################################################################################################################
 # # Find dependencies
@@ -1459,14 +1467,14 @@ if(TARGET PREPARE_AIO)
     )
 else()
     add_custom_command(
-        OUTPUT ${AIO_DIR}/SKSE/Plugins/${PROJECT_NAME}.dll
+        OUTPUT ${AIO_DIR}/SKSE/Plugins/${PACKAGE_BASENAME}.dll
         DEPENDS ${PROJECT_NAME} ${CORE_SOURCES}
         COMMAND
             ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR} --config $<CONFIG>
             --prefix ${AIO_DIR}
         COMMENT "Installing to AIO folder"
     )
-    add_custom_target("AIO" DEPENDS ${AIO_DIR}/SKSE/Plugins/${PROJECT_NAME}.dll)
+    add_custom_target("AIO" DEPENDS ${AIO_DIR}/SKSE/Plugins/${PACKAGE_BASENAME}.dll)
 endif()
 
 # Manual AIO package target

@@ -108,7 +108,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* message)
 		{
 			for (auto it = errors.begin(); it != errors.end(); ++it) {
 				auto& errorMessage = *it;
-				RE::DebugMessageBox(std::format("Community Shaders\n{}, will disable all hooks and features", errorMessage).c_str());
+				RE::DebugMessageBox(std::format("{}\n{}, will disable all hooks and features", Plugin::PRODUCT_NAME, errorMessage).c_str());
 			}
 
 			if (errors.empty()) {
@@ -198,6 +198,14 @@ bool Load()
 			logger::error("{}", errorMessage);
 			errors.push_back(errorMessage);
 		}
+	}
+
+	// The DLL is named after the product, so a Community Shaders install (or a leftover DLL from an
+	// older build) no longer overwrites it and would hook the renderer a second time
+	if (std::filesystem::exists(L"Data/SKSE/Plugins/CommunityShaders.dll")) {
+		auto errorMessage = std::format("CommunityShaders.dll is also installed: {} replaces Community Shaders, keep only one of them", Plugin::PRODUCT_NAME);
+		logger::error("{}", errorMessage);
+		errors.push_back(errorMessage);
 	}
 
 	const auto path = std::filesystem::path("Data/SKSE/Plugins/SexLabUtil.dll");
