@@ -1,0 +1,9 @@
+{
+  "_metadata": {
+    "description": "God rays outdoors at the game's High quality. Sunlit interiors (cells flagged for sunlight, as Interior Sun uses) get them at Low quality."
+  },
+  "ExteriorEnabled": true,
+  "ExteriorQuality": 2,
+  "InteriorEnabled": true,
+  "InteriorQuality": 0
+}

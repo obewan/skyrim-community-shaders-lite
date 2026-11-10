@@ -656,7 +656,6 @@ set(IMNOT_EXCLUDED_FEATURES
     "Terrain Shadows"
     "Terrain Shadows - Heightmaps"
     "Unified Water"
-    "Volumetric Lighting"
     "Volumetric Shadows"
 )
 set(_imnot_kept "")
