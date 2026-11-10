@@ -38,6 +38,7 @@
 #include "Features/TerrainShadows.h"
 #include "Features/TerrainVariation.h"
 #include "Features/TrueSSR.h"
+#include "Features/TrueMist.h"
 #include "Features/TrueMountains.h"
 #include "Features/TrueSnow.h"
 #include "Features/TrueSun.h"
@@ -290,6 +291,7 @@ const std::vector<Feature*>& Feature::GetFeatureList()
 		&globals::features::trueSSR,
 		&globals::features::trueSnow,
 		&globals::features::trueMountains,
+		&globals::features::trueMist,
 		&globals::features::trueSun
 	};
 

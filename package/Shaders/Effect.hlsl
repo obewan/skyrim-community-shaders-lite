@@ -478,6 +478,13 @@ cbuffer PerGeometry : register(b2)
 
 #	include "Common/ShadowSampling.hlsli"
 
+// True Mist only touches alpha-blended effects (not additive, multiplicative, membrane, blood or
+// decals): every other permutation keeps identical preprocessed source, so the shader store reuses it.
+#	if defined(TRUE_MIST) && !defined(ADDBLEND) && !defined(MULTBLEND) && !defined(MULTBLEND_DECAL) && !defined(MEMBRANE) && !defined(BLOOD) && !defined(DEFERRED) && !defined(MOTIONVECTORS_NORMALS)
+#		define TRUE_MIST_ACTIVE
+#		include "TrueMist/TrueMist.hlsli"
+#	endif
+
 #	if defined(LIGHTING)
 float3 GetLightingColor(float3 msPosition, float3 worldPosition, float2 screenPosition, inout float shadowVariance)
 {
@@ -878,6 +885,21 @@ PS_OUTPUT main(PS_INPUT input)
 #	endif
 
 	float3 lightColor = lerp(baseColor.xyz, propertyColor * baseColor.xyz, lightingInfluence);
+
+#	if defined(TRUE_MIST_ACTIVE)
+	[branch] if (TrueMist::IsMist())
+	{
+		const TrueMist::Settings trueMistSettings = TrueMist::GetSettings();
+		float trueMistGlint;
+		lightColor = TrueMist::Shade(lightColor, input.WorldPosition.xyz, trueMistSettings, trueMistGlint);
+		alpha *= TrueMist::Opacity(input.WorldPosition.xyz, trueMistSettings);
+		// A glinting droplet is more opaque than the thin mist around it
+		alpha = lerp(alpha, saturate(alpha * 4.0), saturate(trueMistGlint));
+		// Debug view: detected mist in blue
+		if (trueMistSettings.DebugView)
+			lightColor = float3(0.1, 0.35, 1.0);
+	}
+#	endif
 
 #	if defined(ENABLE_LL) && !defined(DEFERRED) && !defined(MEMBRANE) && !defined(BLOOD) && !defined(MULTBLEND) && !defined(MULTBLEND_DECAL)
 	if ((Permutation::ExtraShaderDescriptor & Permutation::ExtraFlags::SourceAlphaBlend) &&

@@ -436,7 +436,8 @@ public:
 		ETMaterialModel = 0b111 << 6,
 		THLandHasDisplacement = 1 << 9,
 		TVMeshVariation = 1 << 10,
-		TMRock = 1 << 11  ///< True Mountains rock surface; mirrored as TrueMountains::RockFlag in HLSL
+		TMRock = 1 << 11,   ///< True Mountains rock surface; mirrored as TrueMountains::RockFlag in HLSL
+		TrueMist = 1 << 12  ///< True Mist effect draw; mirrored as TrueMist::MistFlag in HLSL
 	};
 
 	bool inWorld = false;
